@@ -10,7 +10,7 @@ The key is never printed.
 """
 import json, os, re, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-url = os.environ.get('SUPABASE_URL', 'https://ithbhetdbwjmaapmkbcg.supabase.co').rstrip('/')
+url = os.environ.get('SUPABASE_URL', 'https://xvwugbmwdkyadfrefdhv.supabase.co').rstrip('/')
 key = os.environ.get('SUPABASE_ANON_KEY', '').strip()
 if not key:
     sys.exit('SUPABASE_ANON_KEY is not set')
