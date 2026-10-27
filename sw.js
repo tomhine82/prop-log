@@ -1,12 +1,13 @@
 // Prop Log service worker.
-// - Page (navigations): network-first, cached copy offline.
+// - Page (navigations): network-first, cached copy offline. Only the app page itself is stored as
+//   index.html; other pages (withings.html OAuth callback) are cached under their own URL.
 // - Plans (plans/*.json): network-first with no HTTP cache, so coach updates show on next open;
 //   offline falls back to the last cached copy (marked with an X-Proplog-Cache header).
 // - config.js (cloud sync config): network-first, cached copy offline.
 // - Everything else: cache-first app shell. Supabase API calls are cross-origin and never touched.
-const CACHE = 'proplog-v3';
+const CACHE = 'proplog-v4';
 const ASSETS = ['./', './index.html', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png'];
-const OPTIONAL = ['./config.js', './plans/tom.json', './plans/nikki.json'];
+const OPTIONAL = ['./config.js', './plans/tom.json', './plans/nikki.json', './withings.html'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE)
     .then(c => c.addAll(ASSETS).then(() => Promise.all(OPTIONAL.map(p => c.add(new Request(p, { cache: 'no-store' })).catch(() => {})))))
@@ -30,8 +31,10 @@ self.addEventListener('fetch', e => {
     return;
   }
   if (e.request.mode === 'navigate') {
-    e.respondWith(fetch(e.request).then(r => { const c = r.clone(); caches.open(CACHE).then(x => x.put('./index.html', c)); return r; })
-      .catch(() => caches.match('./index.html')));
+    const isApp = /\/(index\.html)?$/.test(url.pathname);
+    const key = isApp ? './index.html' : new Request(url.origin + url.pathname);
+    e.respondWith(fetch(e.request).then(r => { if (r.ok) { const c = r.clone(); caches.open(CACHE).then(x => x.put(key, c)); } return r; })
+      .catch(() => caches.match(key).then(hit => hit || caches.match('./index.html'))));
     return;
   }
   e.respondWith(caches.match(e.request).then(hit => hit || fetch(e.request).then(r => {

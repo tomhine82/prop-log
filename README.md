@@ -8,12 +8,16 @@ Live: https://tomhine82.github.io/prop-log/
 | File | What |
 |---|---|
 | `index.html` | The whole app (inline CSS/JS) |
-| `sw.js` | Service worker (`proplog-v3`): app shell cache-first; page, `config.js` and `plans/*.json` network-first |
+| `sw.js` | Service worker (`proplog-v4`): app shell cache-first; page, `config.js` and `plans/*.json` network-first |
+| `withings.html` | Withings OAuth callback – forwards `?code=&state=` to the local helper on 127.0.0.1:8765 |
 | `manifest.json`, `icon*.{svg,png}` | PWA manifest + icons |
 | `plans/tom.json`, `plans/nikki.json` | Coach plans – see `PLAN-FORMAT.md` |
 | `config.js` | Public Supabase config for optional cloud sync (generated) |
 | `supabase/schema.sql` | Table + Row Level Security for cloud sync – paste into the Supabase SQL Editor |
 | `tools/make_config.py` | Generates `config.js` from `SUPABASE_ANON_KEY` |
+| `tools/withings_auth.py`, `tools/withings_sync.py`, `tools/withings_common.py` | Withings body-stats sync (runs on the box, not in the browser) |
+| `supabase/withings.sql` | Optional grant for the sync's service role (only if it reports permission denied) |
+| `tests/` | `test_withings_tools.py` (mocked Withings + Supabase), `test_withings_app.py` (Playwright) |
 
 ## Data
 
@@ -41,6 +45,22 @@ SUPABASE_ANON_KEY=sb_publishable_... python3 tools/make_config.py
 ```
 
 If `config.js` is missing the app simply hides sync.
+
+## Withings body stats (Tom)
+
+Runs on the box with `WITHINGS_CLIENT_ID`, `WITHINGS_CLIENT_SECRET` and `SUPABASE_SERVICE_KEY` in the environment
+(never committed). Tokens and state live in `/home/box/.proplog/` (dir 700, files 600).
+
+```bash
+python3 tools/withings_auth.py          # once: prints the Withings sign-in URL, catches the callback, saves tokens
+python3 tools/withings_sync.py --dry-run
+python3 tools/withings_sync.py          # incremental; first run pulls the last 365 days
+```
+
+One `bodyweight` row per day (`id` = date) for profile `tom`, latest measurement of the day wins, with
+`fat_pct`, `fat_kg`, `muscle_kg`, `hydration_kg`, `bone_kg`, `source: 'withings'`. `updated_at` = time of the
+weigh-in, so newest-wins applies: a weight typed or deleted in the app after the weigh-in is kept. The Body tab
+shows body fat % / muscle and a "from Withings" tag. Exit code 3 = Withings sign-in needed again.
 
 ## Deploy
 

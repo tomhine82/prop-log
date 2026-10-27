@@ -140,7 +140,10 @@ details.day.rest{opacity:.8}
 .pex{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
 .pex .pn{font-weight:650}.pex .pt{white-space:nowrap;font-weight:750}.pex .pnote{font-size:12px;color:var(--muted);margin-top:2px}
 .day-note{font-size:13px;color:var(--muted);margin:4px 0 10px}
-.pill.acc{background:var(--accent);color:var(--accent-ink)}.pill.ok{background:color-mix(in srgb,var(--accent) 22%,var(--card2));color:var(--text)}
+.pill.acc{background:var(--accent);color:var(--accent-ink)}.pill.wd{background:color-mix(in srgb,var(--blue) 20%,var(--card2));color:var(--text);margin-left:0}
+.bw-comp{font-size:12px;color:var(--muted);margin-top:2px}.bw-comp .pill.wd{font-size:10px;padding:1px 6px;margin-right:2px}
+#bwBody td.r{white-space:nowrap}
+.stats.comp{margin-top:-4px}.pill.ok{background:color-mix(in srgb,var(--accent) 22%,var(--card2));color:var(--text)}
 .plan-hint{font-size:12px;color:var(--blue);font-weight:650;margin:-2px 0 8px}
 .src{font-size:12px;color:var(--muted)}.src.off{color:var(--warn);font-weight:650}
 textarea.share{min-height:250px;margin:12px 0;font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap}
@@ -344,8 +347,15 @@ function normalise(d){
       exercises:(s.exercises||[]).map(e=>({name:String(e.name||'Exercise'),sets:(e.sets||[]).map(x=>({reps:num(x.reps),weight:num(x.weight)}))})),
       feel:s.feel?+s.feel:null,rpe:s.rpe?+s.rpe:null,notes:s.notes||'',createdAt:s.createdAt||Date.now(),updatedAt:s.updatedAt||Date.now(),
       ...(s.plan&&Array.isArray(s.plan.exercises)?{plan:normPlanRef(s.plan)}:{})})),
-    bodyweight:(d.bodyweight||[]).filter(b=>b&&b.date&&num(b.kg)).map(b=>({id:b.id||uid(),date:String(b.date).slice(0,10),kg:num(b.kg),updatedAt:+b.updatedAt||0}))};
+    bodyweight:(d.bodyweight||[]).filter(b=>b&&b.date&&num(b.kg)).map(normBW)};
 }
+// Bodyweight record: {id,date,kg,updatedAt} plus optional body-composition fields (written by tools/withings_sync.py).
+const BW_EXTRA=['fat_pct','fat_kg','muscle_kg','hydration_kg','bone_kg'];
+function normBW(b){const r={id:b.id||uid(),date:String(b.date).slice(0,10),kg:num(b.kg),updatedAt:+b.updatedAt||0};
+  BW_EXTRA.forEach(k=>{const v=num(b[k]);if(v!=null&&v>0)r[k]=v;});
+  if(typeof b.source==='string'&&b.source)r.source=b.source.slice(0,32);
+  if(typeof b.measured_at==='string'&&b.measured_at)r.measured_at=b.measured_at.slice(0,40);
+  return r;}
 function normPlanRef(p){return {day:String(p.day||''),title:String(p.title||''),week:String(p.week||''),updated:String(p.updated||''),exercises:p.exercises.map(String)};}
 let db;
 function settings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY))||{};}catch(e){return {};}}
@@ -610,6 +620,15 @@ function renderProgress(){
 
 // ---------- bodyweight ----------
 function latestBW(){return db.bodyweight.slice().sort((a,b)=>b.date.localeCompare(a.date))[0];}
+const isWD=b=>b.source==='withings';
+function bwComp(b){const p=[];if(b.fat_pct!=null)p.push(`fat ${fmtKg(b.fat_pct)}%`);if(b.muscle_kg!=null)p.push(`muscle ${fmtKg(b.muscle_kg)} kg`);
+  return (p.length||isWD(b))?`<div class="bw-comp">${isWD(b)?'<span class="pill wd" title="Synced from Withings">from Withings</span> ':''}${p.join(' · ')}</div>`:'';}
+function compStats(list){
+  const lf=list.slice().reverse().find(b=>b.fat_pct!=null),lm=list.slice().reverse().find(b=>b.muscle_kg!=null);
+  if(!lf&&!lm)return '';
+  const st=(b,v,l)=>`<div class="stat"><div class="v">${b?fmtKg(v):'–'}</div><div class="l">${l}</div></div>`;
+  const src=[lf,lm].some(b=>b&&isWD(b))?'<div class="stat"><div class="v" style="font-size:13px;padding-top:5px"><span class="pill wd">from Withings</span></div><div class="l">Source</div></div>':'<div class="stat"></div>';
+  return `<div class="stats comp" id="bwComp">${st(lf,lf&&lf.fat_pct,'Body fat %')}${st(lm,lm&&lm.muscle_kg,'Muscle kg')}${src}</div>`;}
 function renderBody(){
   $('#bwDate').value=$('#bwDate').value||today();
   const l=latestBW();if(!$('#bwKg').value)$('#bwKg').value=l?l.kg:(profile.startBw||'');
@@ -624,17 +643,18 @@ function renderBody(){
   $('#bwBody').innerHTML=`<div class="stats"><div class="stat"><div class="v">${fmtKg(last.kg)}</div><div class="l">Latest kg</div></div>
     <div class="stat"><div class="v">${diff>0?'+':''}${fmtKg(diff)}</div><div class="l">Change kg</div></div>
     <div class="stat"><div class="v">${fmtKg(Math.min(...list.map(b=>b.kg)))}</div><div class="l">Lowest kg</div></div></div>
+    ${compStats(list)}
     <div class="card"><h2>Trend</h2>${lineChart(series,{label:'Bodyweight trend',h:170,minPad:1})}
     ${pts.length>=5?`<div class="legend"><span><i style="background:${accent}"></i>Weigh-ins</span><span><i style="background:${blue}"></i>7-entry average</span></div>`:''}</div>
     <div class="card"><h2>Entries</h2><table>${list.slice().reverse().map((b,i,arr)=>{const prev=arr[i+1];const d=prev?b.kg-prev.kg:null;
-      return `<tr><td>${fmtDate(b.date,{weekday:'short',day:'numeric',month:'short',year:'2-digit'})}</td><td class="r"><b>${fmtKg(b.kg)}</b> kg</td>
+      return `<tr><td>${fmtDate(b.date,{weekday:'short',day:'numeric',month:'short',year:'2-digit'})}${bwComp(b)}</td><td class="r"><b>${fmtKg(b.kg)}</b> kg</td>
       <td class="r small ${d>0?'':'muted'}">${d==null?'':(d>0?'+':'')+fmtKg(d)}</td><td class="r"><button class="x" data-bw="${b.id}" aria-label="Delete entry">×</button></td></tr>`;}).join('')}</table></div>`;
 }
 $('#bwSave').addEventListener('click',()=>{
   const date=$('#bwDate').value||today(),kg=num($('#bwKg').value);
   if(!kg||kg<30||kg>300){toast('Enter a weight in kg');return;}
   const ex=db.bodyweight.find(b=>b.date===date);
-  if(ex){ex.kg=kg;ex.updatedAt=Date.now();toast('Updated '+shortDate(date));}else{db.bodyweight.push({id:uid(),date,kg,updatedAt:Date.now()});toast('Weight saved ✓');}
+  if(ex){if(ex.kg!==kg&&ex.source==='withings'){ex.source='manual';}ex.kg=kg;ex.updatedAt=Date.now();toast('Updated '+shortDate(date));}else{db.bodyweight.push({id:uid(),date,kg,updatedAt:Date.now()});toast('Weight saved ✓');}
   save();renderBody();updateHdr();
 });
 $('#bwBody').addEventListener('click',ev=>{const b=ev.target.closest('[data-bw]');if(!b)return;if(!confirm('Delete this weigh-in?'))return;
