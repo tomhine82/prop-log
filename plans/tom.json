@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "athlete": "Tom",
+  "title": "In-season week (fallback template)",
+  "author": "Grok Bot",
+  "updated": "2026-10-27",
+  "notes": "In-season: rugby Thu 7–8:30pm, match Sat 2pm. Leave 1–2 reps in the tank on every lift; no grinders after Wednesday. targetKg is blank until we know your working weights – log what you lift and the plan will be updated from your logs.",
+  "weeks": [
+    {
+      "label": "In-season week",
+      "days": [
+        {
+          "day": "Mon", "title": "Lower strength", "type": "Lower strength",
+          "focus": "Squat + hinge, single-leg, neck",
+          "notes": "Warm up 10 min (bike or skipping + hip mobility). If legs are still smashed from Saturday, drop one set from each lift.",
+          "exercises": [
+            { "name": "Back squat", "sets": 4, "reps": "5", "targetKg": null, "rest": "3 min", "notes": "Build to a solid 5, ~RPE 8" },
+            { "name": "Romanian deadlift", "sets": 3, "reps": "8", "targetKg": null, "rest": "2 min", "notes": "Slow lowering" },
+            { "name": "Dumbbell walking lunge", "sets": 3, "reps": "10/leg", "targetKg": null, "rest": "90s", "notes": "" },
+            { "name": "Kettlebell swing", "sets": 3, "reps": "15", "targetKg": null, "rest": "60s", "notes": "Explosive hips" },
+            { "name": "Neck work", "sets": 3, "reps": "15", "targetKg": null, "rest": "45s", "notes": "Front/back/sides, controlled" }
+          ]
+        },
+        {
+          "day": "Tue", "title": "Easy run or ride", "type": "Running conditioning",
+          "focus": "Aerobic base, 30–45 min easy",
+          "notes": "Option A: 25–30 min easy run (conversational pace) + 6 × 15s strides. Option B: 45–60 min easy ride. Keep it easy – this is recovery plus engine building.",
+          "exercises": []
+        },
+        {
+          "day": "Wed", "title": "Upper strength", "type": "Upper strength",
+          "focus": "Press, pull, carries",
+          "notes": "Keep it crisp – Thursday is training.",
+          "exercises": [
+            { "name": "Bench press", "sets": 4, "reps": "5", "targetKg": null, "rest": "3 min", "notes": "~RPE 8" },
+            { "name": "Pull-up", "sets": 4, "reps": "6-8", "targetKg": null, "rest": "2 min", "notes": "Leave kg blank for bodyweight; add load if 8 is easy" },
+            { "name": "Overhead press", "sets": 3, "reps": "6-8", "targetKg": null, "rest": "2 min", "notes": "" },
+            { "name": "Dumbbell row", "sets": 3, "reps": "10/arm", "targetKg": null, "rest": "90s", "notes": "" },
+            { "name": "Sandbag bear-hug carry", "sets": 3, "reps": "30m", "targetKg": 15, "rest": "60s", "notes": "15kg sandbag, brace hard" }
+          ]
+        },
+        {
+          "day": "Thu", "title": "Rugby training", "type": "Rugby training",
+          "focus": "Club training 7–8:30pm – no gym",
+          "notes": "Log feel, RPE and any scrum/contact notes.",
+          "exercises": []
+        },
+        {
+          "day": "Fri", "title": "Rest / mobility", "type": "Other",
+          "focus": "Optional 15–20 min mobility",
+          "notes": "Hips, ankles, thoracic spine, neck. Hydrate and eat well before the match.",
+          "exercises": []
+        },
+        {
+          "day": "Sat", "title": "Match", "type": "Match",
+          "focus": "Kick-off 2pm",
+          "notes": "Log minutes played, scrum count/feel and any knocks.",
+          "exercises": []
+        },
+        {
+          "day": "Sun", "title": "Recovery ride or walk", "type": "Ride",
+          "focus": "45–60 min very easy",
+          "notes": "Easy spin or walk, then 10 min stretching. Note any niggles from the match.",
+          "exercises": []
+        }
+      ]
+    }
+  ]
+}

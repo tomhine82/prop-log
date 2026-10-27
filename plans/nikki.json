@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "athlete": "Nikki",
+  "placeholder": true,
+  "title": "PLACEHOLDER – no plan yet",
+  "author": "",
+  "updated": "2026-10-27",
+  "notes": "PLACEHOLDER: Nikki's plan will be written by her coach bot. Replace this file with a real plan in the same schema (see PLAN-FORMAT.md) and remove \"placeholder\": true.",
+  "weeks": [
+    { "label": "Placeholder", "days": [] }
+  ]
+}
