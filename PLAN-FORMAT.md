@@ -13,6 +13,9 @@ commit to the repo shows up the next time the app is opened. Offline, it uses th
 (service-worker cache, then a copy kept in localStorage) and says "Offline – showing saved copy".
 
 To update a plan: edit the JSON file, bump `updated`, and push to `main`. No app change needed.
+Plans are served from the repo, not from cloud sync – cloud sync (see README.md) only carries
+logged sessions and bodyweight. A session's link to its plan day (`session.plan`) syncs with it,
+so ADDED/SKIPPED flags in the coach summary are the same on every device.
 
 ## Schema
 

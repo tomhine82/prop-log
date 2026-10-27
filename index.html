@@ -39,7 +39,7 @@ main{max-width:560px;margin:0 auto;padding:14px 14px 24px}
 .card h2{font-size:15px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
 label{display:block;font-size:13px;color:var(--muted);margin:0 0 6px;font-weight:600}
 input,select,textarea,button{font:inherit;color:inherit}
-input[type=date],input[type=number],input[type=text],select,textarea{
+input[type=date],input[type=number],input[type=text],input[type=email],select,textarea{
   width:100%;min-height:var(--tap);padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--text);outline:none;appearance:none;-webkit-appearance:none}
 select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
   background-position:calc(100% - 18px) 50%,calc(100% - 12px) 50%;background-size:6px 6px;background-repeat:no-repeat;padding-right:32px}
@@ -111,6 +111,11 @@ nav.tabs button.on{color:var(--accent)}
 .sticky-save{position:sticky;bottom:calc(72px + env(safe-area-inset-bottom));z-index:4;padding-top:6px}
 .sticky-save .btn{box-shadow:0 6px 20px rgba(0,0,0,.25);min-height:54px;font-size:17px}
 .hidden{display:none!important}
+.sync-pill{flex:none;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--card2);color:var(--muted);border:1px solid var(--line);cursor:pointer;white-space:nowrap}
+.sync-pill.ok{color:var(--accent)}.sync-pill.off{color:var(--warn)}.sync-pill.err{color:var(--danger)}
+header h1{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sync-status{font-weight:700}.sync-status.ok{color:var(--accent)}.sync-status.off{color:var(--warn)}.sync-status.err{color:var(--danger)}
+input.code{letter-spacing:.3em;text-align:center;font-size:22px;font-weight:700}
 /* profiles */
 .hdr-prof{flex:none;min-height:36px;padding:0 12px 0 4px;border-radius:999px;border:1px solid var(--line);background:var(--card2);font-weight:700;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .av{width:28px;height:28px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex:none}
@@ -145,6 +150,7 @@ textarea.share{min-height:250px;margin:12px 0;font:13px/1.45 ui-monospace,SFMono
 <header>
   <h1 id="title">Log session</h1>
   <span class="sub" id="hdrSub"></span>
+  <button class="sync-pill hidden" id="syncPill" aria-label="Cloud sync status – tap to sync now"></button>
   <button class="hdr-prof" id="profileBtn" aria-label="Switch person"><span class="av" id="profAv">T</span><span id="profName">Tom</span></button>
 </header>
 <main>
@@ -226,6 +232,27 @@ textarea.share{min-height:250px;margin:12px 0;font:13px/1.45 ui-monospace,SFMono
     <p class="small muted" style="margin-top:0">Active: <b id="dataProf">Tom</b>. Each person's sessions, bodyweight, PBs and plan are kept separate.</p>
     <button class="btn block" id="dataSwitch">⇄ Switch person</button>
   </div>
+  <div class="card" id="syncCard">
+    <h2>Cloud sync <span class="pill">optional</span></h2>
+    <p class="small muted" style="margin-top:0">Back up <b class="syncName">Tom</b>'s log to the cloud and sync it between devices. Everything still works offline without it, and local data is never wiped.</p>
+    <p class="small" style="margin:0 0 10px">Status: <span class="sync-status" id="syncStatus">Not signed in</span></p>
+    <div id="syncOut">
+      <div class="field" id="emailWrap"><label for="syncEmail">Email</label><input type="email" id="syncEmail" autocomplete="email" inputmode="email" placeholder="you@example.com"></div>
+      <button class="btn primary block" id="syncSend">✉ Email me a sign-in code</button>
+      <div id="codeWrap" class="hidden">
+        <div class="spacer"></div>
+        <div class="field"><label for="syncCode">Code from the email</label><input type="text" id="syncCode" class="code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456"></div>
+        <button class="btn primary block" id="syncVerify">Sign in</button>
+        <div class="spacer"></div>
+        <div class="row"><button class="btn small" id="syncResend">Resend code</button><button class="btn small" id="syncChange">Change email</button></div>
+      </div>
+    </div>
+    <div id="syncIn" class="hidden">
+      <p class="small muted" style="margin-top:0">Signed in as <b id="syncWho"></b></p>
+      <div class="row"><button class="btn" id="syncNow">⟳ Sync now</button><button class="btn danger" id="syncSignOut">Sign out</button></div>
+    </div>
+    <p class="small muted hidden" id="syncNoCfg" style="margin:0">Cloud sync isn't configured for this copy of the app (config.js missing).</p>
+  </div>
   <div class="card">
     <h2>Coach</h2>
     <p class="small muted" style="margin-top:0">Send a short text summary of recent sessions (with anything added to or skipped from the plan) to your coach.</p>
@@ -275,6 +302,7 @@ textarea.share{min-height:250px;margin:12px 0;font:13px/1.45 ui-monospace,SFMono
   </div>
 </div>
 
+<script src="config.js"></script>
 <script>
 (function(){
 'use strict';
@@ -316,13 +344,14 @@ function normalise(d){
       exercises:(s.exercises||[]).map(e=>({name:String(e.name||'Exercise'),sets:(e.sets||[]).map(x=>({reps:num(x.reps),weight:num(x.weight)}))})),
       feel:s.feel?+s.feel:null,rpe:s.rpe?+s.rpe:null,notes:s.notes||'',createdAt:s.createdAt||Date.now(),updatedAt:s.updatedAt||Date.now(),
       ...(s.plan&&Array.isArray(s.plan.exercises)?{plan:normPlanRef(s.plan)}:{})})),
-    bodyweight:(d.bodyweight||[]).filter(b=>b&&b.date&&num(b.kg)).map(b=>({id:b.id||uid(),date:String(b.date).slice(0,10),kg:num(b.kg)}))};
+    bodyweight:(d.bodyweight||[]).filter(b=>b&&b.date&&num(b.kg)).map(b=>({id:b.id||uid(),date:String(b.date).slice(0,10),kg:num(b.kg),updatedAt:+b.updatedAt||0}))};
 }
 function normPlanRef(p){return {day:String(p.day||''),title:String(p.title||''),week:String(p.week||''),updated:String(p.updated||''),exercises:p.exercises.map(String)};}
 let db;
 function settings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY))||{};}catch(e){return {};}}
 function setSetting(k,v){const o=settings();o[k]=v;localStorage.setItem(SETTINGS_KEY,JSON.stringify(o));}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){toast('Could not save – storage full?');}}
+function save(opts){try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){toast('Could not save – storage full?');return;}
+  if(window.__plSync)window.__plSync.track(profile.id,db,opts);}
 
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),2200);}
 
@@ -346,7 +375,7 @@ document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',
 function updateHdr(){
   const bw=latestBW();$('#hdrSub').textContent=bw?fmtKg(bw.kg)+' kg':'';
   $('#profAv').textContent=profile.name[0];$('#profName').textContent=profile.name;
-  $('#dataProf').textContent=profile.name;document.querySelectorAll('.wipeName').forEach(e=>e.textContent=profile.name);
+  $('#dataProf').textContent=profile.name;document.querySelectorAll('.syncName').forEach(e=>e.textContent=profile.name);document.querySelectorAll('.wipeName').forEach(e=>e.textContent=profile.name);
 }
 
 // ---------- log / draft ----------
@@ -605,7 +634,7 @@ $('#bwSave').addEventListener('click',()=>{
   const date=$('#bwDate').value||today(),kg=num($('#bwKg').value);
   if(!kg||kg<30||kg>300){toast('Enter a weight in kg');return;}
   const ex=db.bodyweight.find(b=>b.date===date);
-  if(ex){ex.kg=kg;toast('Updated '+shortDate(date));}else{db.bodyweight.push({id:uid(),date,kg});toast('Weight saved ✓');}
+  if(ex){ex.kg=kg;ex.updatedAt=Date.now();toast('Updated '+shortDate(date));}else{db.bodyweight.push({id:uid(),date,kg,updatedAt:Date.now()});toast('Weight saved ✓');}
   save();renderBody();updateHdr();
 });
 $('#bwBody').addEventListener('click',ev=>{const b=ev.target.closest('[data-bw]');if(!b)return;if(!confirm('Delete this weigh-in?'))return;
@@ -633,13 +662,13 @@ $('#importFile').addEventListener('change',async ev=>{
     if(replace)db=inc;else{
       const ids=new Set(db.sessions.map(s=>s.id));inc.sessions.forEach(s=>{if(!ids.has(s.id))db.sessions.push(s);});
       const dates=new Map(db.bodyweight.map(b=>[b.date,b]));inc.bodyweight.forEach(b=>{if(!dates.has(b.date))db.bodyweight.push(b);});}
-    save();renderPicker();renderData();updateHdr();toast(replace?'Data replaced from backup':'Backup merged');
+    save({noTombs:true,resetCursor:replace});renderPicker();renderData();updateHdr();toast(replace?'Data replaced from backup':'Backup merged');
   }catch(e){alert('Could not import: '+e.message);}
 });
 $('#wipeBtn').addEventListener('click',()=>{
-  if(!confirm(`Delete ALL of ${profile.name}'s sessions and weigh-ins from this device? Export a backup first!`))return;
+  if(!confirm(`Delete ALL of ${profile.name}'s sessions and weigh-ins from this device? Export a backup first!`+(window.__plSync&&window.__plSync.signedIn(profile.id)?'\n\nYour cloud copy is NOT deleted – it will download again on the next sync. Sign out first to keep this device empty.':'')))return;
   if(prompt('Type DELETE to confirm')!=='DELETE')return;
-  db={version:1,sessions:[],bodyweight:[]};save();draft=blankDraft();saveDraft();renderPicker();renderLog();renderData();updateHdr();toast('All data deleted');
+  db={version:1,sessions:[],bodyweight:[]};save({noTombs:true,resetCursor:true});draft=blankDraft();saveDraft();renderPicker();renderLog();renderData();updateHdr();toast('All data deleted');
 });
 
 // ---------- dates ----------
@@ -798,6 +827,222 @@ $('#shareSheet').addEventListener('click',ev=>{if(ev.target.id==='shareSheet')$(
 $('#histShare').addEventListener('click',openShare);
 $('#dataShare').addEventListener('click',openShare);
 
+// ---------- cloud sync (optional, Supabase via plain fetch – no SDK) ----------
+// Records: kind 'session' (id = session id) and 'bodyweight' (id = date). Last-write-wins per
+// record by updatedAt; deletes become tombstones. Per-profile state in proplog.sync:<profile>.
+const Sync=(function(){
+  const CFG=window.PROPLOG_CONFIG||{};const URLB=(CFG.supabaseUrl||'').replace(/\/$/,''),APIKEY=CFG.supabaseKey||'';
+  const enabled=!!(URLB&&APIKEY);const TABLE='proplog_data';
+  const skey=pid=>'proplog.sync:'+pid;
+  const blank=()=>({session:null,cursor:null,lastSync:null,queue:[],tombs:{},known:null,status:'',error:'',pendingEmail:''});
+  function get(pid){try{return Object.assign(blank(),JSON.parse(localStorage.getItem(skey(pid)))||{});}catch(e){return blank();}}
+  function put(pid,st){localStorage.setItem(skey(pid),JSON.stringify(st));}
+  const recKeys=d=>{const m={};d.sessions.forEach(s=>m['session:'+s.id]=+s.updatedAt||0);d.bodyweight.forEach(b=>m['bodyweight:'+b.date]=+b.updatedAt||0);return m;};
+  const readDB=pid=>pid===profile.id?db:(()=>{try{const d=JSON.parse(localStorage.getItem(keysFor(pid).data));if(d&&Array.isArray(d.sessions))return normalise(d);}catch(e){}return {version:1,sessions:[],bodyweight:[]};})();
+  function writeDB(pid,d){localStorage.setItem(keysFor(pid).data,JSON.stringify(d));if(pid===profile.id)db=d;}
+  // Called after every local save: diff against last known state -> queue changed keys, tombstone removed ones.
+  function track(pid,d,opts){
+    opts=opts||{};const st=get(pid),now=recKeys(d);
+    if(st.known){
+      const q=new Set(st.queue);
+      Object.keys(now).forEach(k=>{if(st.known[k]!==now[k]){q.add(k);delete st.tombs[k];}});
+      Object.keys(st.known).forEach(k=>{if(!(k in now)){if(!opts.noTombs){st.tombs[k]=Date.now();q.add(k);}else q.delete(k);}});
+      st.queue=[...q];
+    }
+    st.known=now;if(opts.resetCursor)st.cursor=null;put(pid,st);
+    if(st.session)schedule(pid);
+  }
+  function initKnown(pid){const st=get(pid);if(!st.known){st.known=recKeys(readDB(pid));put(pid,st);}}
+  // ---- HTTP ----
+  async function http(path,opt,pid){
+    opt=opt||{};const h=Object.assign({apikey:APIKEY,'Content-Type':'application/json'},opt.headers||{});
+    if(pid){const st=get(pid);if(st.session)h.Authorization='Bearer '+st.session.access_token;}
+    const r=await fetch(URLB+path,{method:opt.method||'GET',headers:h,body:opt.body!=null?JSON.stringify(opt.body):undefined,cache:'no-store'});
+    let j=null;const t=await r.text();try{j=t?JSON.parse(t):null;}catch(e){}
+    if(!r.ok){const e=new Error((j&&(j.msg||j.message||j.error_description||j.error))||('HTTP '+r.status));e.status=r.status;e.body=j;throw e;}
+    return j;
+  }
+  function storeSession(pid,j){
+    const st=get(pid);const prevUser=st.session&&st.session.user?st.session.user.id:st.linkedUser;
+    const exp=j.expires_at?+j.expires_at:Math.floor(Date.now()/1000)+(+j.expires_in||3600);
+    st.session={access_token:j.access_token,refresh_token:j.refresh_token,expires_at:exp,user:{id:j.user.id,email:j.user.email||''}};
+    if(prevUser&&prevUser!==j.user.id)st.cursor=null;   // different account: full merge, local data kept
+    st.linkedUser=j.user.id;st.error='';put(pid,st);
+  }
+  async function ensureToken(pid){
+    const st=get(pid);if(!st.session)throw new Error('not signed in');
+    if(st.session.expires_at*1000-60000>Date.now())return;
+    try{const j=await http('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:{refresh_token:st.session.refresh_token}});
+      if(!j.user)j.user=st.session.user;storeSession(pid,j);}
+    catch(e){if(e.status>=400&&e.status<500){const s2=get(pid);s2.session=null;s2.error='Session expired – sign in again';put(pid,s2);}throw e;}
+  }
+  async function rest(pid,path,opt){
+    await ensureToken(pid);
+    try{return await http(path,opt,pid);}
+    catch(e){if(e.status===401){const st=get(pid);if(st.session){st.session.expires_at=0;put(pid,st);}await ensureToken(pid);return await http(path,opt,pid);}throw e;}
+  }
+  // ---- merge ----
+  function applyRows(pid,rows,initial){
+    const st=get(pid),d=readDB(pid);const q=new Set(st.queue);let changed=0;
+    if(initial){Object.keys(recKeys(d)).forEach(k=>q.add(k));Object.keys(st.tombs).forEach(k=>q.add(k));}
+    rows.forEach(r=>{
+      const k=r.kind+':'+r.id,cts=Date.parse(r.updated_at);if(!isFinite(cts))return;
+      const isS=r.kind==='session';const arr=isS?d.sessions:d.bodyweight;
+      const idx=arr.findIndex(x=>isS?x.id===r.id:x.date===r.id);
+      const lts=idx>=0?(+arr[idx].updatedAt||0):(k in st.tombs?st.tombs[k]:-1);
+      if(cts>lts){
+        if(r.deleted){if(idx>=0){arr.splice(idx,1);changed++;}st.tombs[k]=cts;}
+        else{const n=normalise({sessions:isS?[r.data]:[],bodyweight:isS?[]:[r.data]});const rec=(isS?n.sessions:n.bodyweight)[0];
+          if(rec){rec.updatedAt=cts;if(isS)rec.id=r.id;else rec.date=r.id;if(idx>=0)arr[idx]=rec;else arr.push(rec);delete st.tombs[k];changed++;}}
+        q.delete(k);
+      }else if(cts===lts)q.delete(k);
+      else q.add(k);
+      if(r.synced_at&&(!st.cursor||r.synced_at>st.cursor))st.cursor=r.synced_at;
+    });
+    st.queue=[...q];st.known=recKeys(d);put(pid,st);
+    if(changed)writeDB(pid,d);
+    return changed;
+  }
+  function buildPush(pid){
+    const st=get(pid),d=readDB(pid),uidv=st.session.user.id,rows=[];
+    st.queue.forEach(k=>{const i=k.indexOf(':'),kind=k.slice(0,i),id=k.slice(i+1);
+      const rec=kind==='session'?d.sessions.find(s=>s.id===id):d.bodyweight.find(b=>b.date===id);
+      if(rec)rows.push({user_id:uidv,profile:pid,kind,id,data:rec,updated_at:new Date(+rec.updatedAt||0).toISOString(),deleted:false,_k:k,_t:+rec.updatedAt||0});
+      else if(k in st.tombs)rows.push({user_id:uidv,profile:pid,kind,id,data:{},updated_at:new Date(st.tombs[k]).toISOString(),deleted:true,_k:k,_t:st.tombs[k]});});
+    return rows;
+  }
+  async function pull(pid){
+    const rows=[];let cursor=get(pid).cursor;
+    for(let i=0;i<50;i++){
+      const qs=`?select=kind,id,data,updated_at,deleted,synced_at&profile=eq.${encodeURIComponent(pid)}`+(cursor?`&synced_at=gt.${encodeURIComponent(cursor)}`:'')+'&order=synced_at.asc&limit=1000';
+      const page=await rest(pid,'/rest/v1/'+TABLE+qs);rows.push(...page);
+      if(page.length<1000)break;cursor=page[page.length-1].synced_at;
+    }
+    return rows;
+  }
+  // ---- orchestration ----
+  const running={},again={},timers={};
+  function schedule(pid,ms){clearTimeout(timers[pid]);timers[pid]=setTimeout(()=>sync(pid),ms==null?600:ms);}
+  async function sync(pid){
+    pid=pid||profile.id;if(!enabled)return;
+    if(running[pid]){again[pid]=true;return running[pid];}
+    const st0=get(pid);if(!st0.session){render();return;}
+    if(!navigator.onLine){setStatus(pid,'offline');return;}
+    running[pid]=(async()=>{
+      setStatus(pid,'syncing');
+      try{
+        initKnown(pid);
+        const initial=!get(pid).cursor;
+        const rows=await pull(pid);
+        const changed=applyRows(pid,rows,initial);
+        if(changed&&pid===profile.id)refreshViews();
+        const push=buildPush(pid);
+        for(let i=0;i<push.length;i+=200){
+          const chunk=push.slice(i,i+200);
+          await rest(pid,'/rest/v1/'+TABLE+'?on_conflict=user_id,profile,kind,id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
+            body:chunk.map(({_k,_t,...r})=>r)});
+          const st=get(pid),d=readDB(pid),now=recKeys(d);
+          st.queue=st.queue.filter(k=>{const c=chunk.find(r=>r._k===k);if(!c)return true;const cur=k in now?now[k]:(k in st.tombs?st.tombs[k]:null);return cur!==c._t;});
+          put(pid,st);
+        }
+        const st=get(pid);st.lastSync=Date.now();st.error='';put(pid,st);setStatus(pid,'ok');
+      }catch(e){
+        const st=get(pid);
+        if(e instanceof TypeError||!navigator.onLine){setStatus(pid,'offline');}
+        else{st.error=e.message||'Sync failed';put(pid,st);setStatus(pid,st.session?'error':'out');}
+      }finally{running[pid]=null;if(again[pid]){again[pid]=false;schedule(pid,50);}}
+    })();
+    return running[pid];
+  }
+  const live={};
+  function setStatus(pid,s){live[pid]=s;if(pid===profile.id)render();}
+  function statusText(pid){
+    if(!enabled)return ['Not configured',''];
+    const st=get(pid);if(!st.session)return [st.error||'Not signed in',st.error?'err':''];
+    const n=st.queue.length,s=live[pid];
+    if(s==='syncing')return ['Syncing…',''];
+    if(s==='offline'||!navigator.onLine)return [`Offline${n?` · ${n} change${n>1?'s':''} waiting`:''}`,'off'];
+    if(s==='error')return ['Sync error: '+st.error,'err'];
+    if(st.lastSync)return [`Synced ${new Date(st.lastSync).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}${n?` · ${n} waiting`:''}`,'ok'];
+    return ['Signed in – not synced yet',''];
+  }
+  function render(){
+    const pid=profile.id,st=get(pid),[txt,cls]=statusText(pid);
+    const el=$('#syncStatus');el.textContent=txt;el.className='sync-status '+cls;
+    const pill=$('#syncPill');pill.classList.toggle('hidden',!enabled||!st.session);
+    pill.textContent=txt.replace(/^Synced /,'☁ ').replace(/ · .*/,'').replace(/^Sync error.*/,'☁ error').replace(/^Offline.*/,'☁ offline').replace('Syncing…','☁ …').replace(/^Signed in.*/,'☁');
+    pill.className='sync-pill '+cls+(!enabled||!st.session?' hidden':'');
+    $('#syncNoCfg').classList.toggle('hidden',enabled);$('#syncOut').classList.toggle('hidden',!enabled||!!st.session);$('#syncIn').classList.toggle('hidden',!enabled||!st.session);
+    if(st.session)$('#syncWho').textContent=st.session.user.email||st.session.user.id;
+    else{const pend=!!st.pendingEmail;$('#codeWrap').classList.toggle('hidden',!pend);$('#syncSend').classList.toggle('hidden',pend);
+      if(pend&&!$('#syncEmail').value)$('#syncEmail').value=st.pendingEmail;$('#syncEmail').readOnly=pend;}
+  }
+  // ---- auth UI ----
+  const redirectTo=()=>{const u=new URL('./',location.href);u.searchParams.set('p',profile.id);return u.href;};
+  async function sendCode(){
+    const email=$('#syncEmail').value.trim().toLowerCase();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){toast('Enter a valid email');return;}
+    if(!navigator.onLine){toast('You are offline');return;}
+    const btn=$('#syncSend');btn.disabled=true;$('#syncResend').disabled=true;
+    try{await http('/auth/v1/otp?redirect_to='+encodeURIComponent(redirectTo()),{method:'POST',body:{email,create_user:true}});
+      const st=get(profile.id);st.pendingEmail=email;st.error='';put(profile.id,st);render();$('#syncCode').value='';$('#syncCode').focus();toast('Code sent – check your email');}
+    catch(e){toast(e.status===429?'Too many emails – wait a minute and try again':'Could not send code: '+e.message);}
+    finally{btn.disabled=false;$('#syncResend').disabled=false;}
+  }
+  async function verify(){
+    const pid=profile.id,st=get(pid),token=$('#syncCode').value.replace(/\D/g,'');
+    if(token.length<6){toast('Enter the code from the email');return;}
+    const btn=$('#syncVerify');btn.disabled=true;
+    try{let j;
+      try{j=await http('/auth/v1/verify',{method:'POST',body:{type:'email',email:st.pendingEmail,token}});}
+      catch(e1){if(e1.status!==403&&e1.status!==400)throw e1;   // brand-new user: code may be a sign-up confirmation code
+        j=await http('/auth/v1/verify',{method:'POST',body:{type:'signup',email:st.pendingEmail,token}});}
+      storeSession(pid,j);const s2=get(pid);s2.pendingEmail='';put(pid,s2);$('#syncCode').value='';$('#syncEmail').readOnly=false;
+      render();toast('Signed in – syncing…');await sync(pid);
+      const s3=get(pid);if(s3.lastSync)toast('Synced ✓ – your data is backed up');}
+    catch(e){toast(e.status===403||e.status===400||e.status===401?'That code is wrong or expired':'Sign-in failed: '+e.message);}
+    finally{btn.disabled=false;}
+  }
+  async function signOut(){
+    const pid=profile.id;if(!confirm(`Sign ${profile.name} out of cloud sync? Data on this device is kept.`))return;
+    const st=get(pid);try{if(st.session&&navigator.onLine)await http('/auth/v1/logout',{method:'POST'},pid);}catch(e){}
+    const s2=get(pid);s2.session=null;s2.cursor=null;s2.error='';put(pid,s2);live[pid]='';render();toast('Signed out – local data kept');
+  }
+  // Magic-link fallback: tokens arrive in the URL hash (#access_token=…). ?p=<profile> says whose.
+  async function handleRedirect(){
+    if(!location.hash||location.hash.length<2)return;
+    const h=new URLSearchParams(location.hash.slice(1));const qp=new URLSearchParams(location.search).get('p');
+    const clean=()=>{const u=new URL(location.href);u.hash='';u.searchParams.delete('p');history.replaceState(null,'',u.pathname+u.search);};
+    if(h.get('error_description')||h.get('error')){clean();toast('Sign-in link failed: '+(h.get('error_description')||h.get('error')).replace(/\+/g,' '));return;}
+    if(!h.get('access_token'))return;
+    const pid=PROFILES.some(p=>p.id===qp)?qp:profile.id;clean();
+    try{const tmp=get(pid);tmp.session={access_token:h.get('access_token'),refresh_token:h.get('refresh_token'),expires_at:+h.get('expires_at')||Math.floor(Date.now()/1000)+(+h.get('expires_in')||3600),user:{id:'',email:''}};put(pid,tmp);
+      const u=await http('/auth/v1/user',{},pid);
+      storeSession(pid,{access_token:tmp.session.access_token,refresh_token:tmp.session.refresh_token,expires_at:tmp.session.expires_at,user:u});
+      const s2=get(pid);s2.pendingEmail='';put(pid,s2);
+      if(pid!==profile.id)switchProfile(pid);render();toast('Signed in – syncing…');sync(pid);}
+    catch(e){const s2=get(pid);s2.session=null;put(pid,s2);render();toast('Sign-in link failed: '+e.message);}
+  }
+  $('#syncSend').addEventListener('click',sendCode);$('#syncResend').addEventListener('click',sendCode);
+  $('#syncVerify').addEventListener('click',verify);
+  $('#syncCode').addEventListener('input',e=>{const v=e.target.value.replace(/\D/g,'');if(v.length===6&&e.inputType==='insertFromPaste')verify();});
+  $('#syncCode').addEventListener('keydown',e=>{if(e.key==='Enter')verify();});
+  $('#syncChange').addEventListener('click',()=>{const st=get(profile.id);st.pendingEmail='';put(profile.id,st);$('#syncEmail').readOnly=false;$('#syncEmail').value='';render();$('#syncEmail').focus();});
+  $('#syncNow').addEventListener('click',()=>sync(profile.id));
+  $('#syncPill').addEventListener('click',()=>sync(profile.id));
+  $('#syncSignOut').addEventListener('click',signOut);
+  window.addEventListener('online',()=>{PROFILES.forEach(p=>{if(get(p.id).session)sync(p.id);});});
+  window.addEventListener('offline',()=>{PROFILES.forEach(p=>live[p.id]='offline');render();});
+  let lastPull=0;
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-lastPull>15000){lastPull=Date.now();sync(profile.id);}});
+  function start(){PROFILES.forEach(p=>initKnown(p.id));render();handleRedirect().then(()=>{lastPull=Date.now();sync(profile.id);});}
+  return {enabled,track,sync,render,start,signedIn:pid=>!!get(pid).session,state:get};
+})();
+window.__plSync=Sync;
+function refreshViews(){
+  if(current==='history')renderHistory();if(current==='progress')renderProgressPicker();if(current==='body')renderBody();
+  if(current==='data')renderData();if(current==='plan')renderPlan();renderPicker();updateHdr();
+}
+
 // ---------- profiles ----------
 function applyProfile(id){
   profile=PROFILES.find(p=>p.id===id)||PROFILES[0];
@@ -816,6 +1061,7 @@ function switchProfile(id){
   if(!changed&&db){return;}
   applyProfile(id);$('#bwKg').value='';$('#histFilter').value='';
   renderPicker();renderLog();updateHdr();show(current);loadPlan();toast(`Hi ${profile.name} 👋`);
+  if(window.__plSync){window.__plSync.render();window.__plSync.sync(profile.id);}
 }
 $('#profGrid').addEventListener('click',ev=>{const b=ev.target.closest('[data-prof]');if(b)switchProfile(b.dataset.prof);});
 $('#profCancel').addEventListener('click',()=>$('#profileSheet').classList.add('hidden'));
@@ -826,10 +1072,10 @@ $('#dataSwitch').addEventListener('click',()=>openProfiles(false));
 // ---------- init ----------
 const savedProfile=localStorage.getItem(ACTIVE_KEY);
 applyProfile(PROFILES.some(p=>p.id===savedProfile)?savedProfile:'tom');
-renderPicker();renderLog();updateHdr();loadPlan();
+renderPicker();renderLog();updateHdr();loadPlan();Sync.start();
 if(!PROFILES.some(p=>p.id===savedProfile))openProfiles(true);
 if('serviceWorker' in navigator&&location.protocol!=='file:'){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}
-window.__proplog={get db(){return db},get profile(){return profile.id},get plan(){return plan},get planSource(){return planSource},buildShare};
+window.__proplog={get db(){return db},sync:Sync,get profile(){return profile.id},get plan(){return plan},get planSource(){return planSource},buildShare};
 })();
 </script>
 </body>
