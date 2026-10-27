@@ -39,7 +39,7 @@ main{max-width:560px;margin:0 auto;padding:14px 14px 24px}
 .card h2{font-size:15px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
 label{display:block;font-size:13px;color:var(--muted);margin:0 0 6px;font-weight:600}
 input,select,textarea,button{font:inherit;color:inherit}
-input[type=date],input[type=number],input[type=text],input[type=email],select,textarea{
+input[type=date],input[type=number],input[type=text],input[type=email],input[type=password],select,textarea{
   width:100%;min-height:var(--tap);padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--text);outline:none;appearance:none;-webkit-appearance:none}
 select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
   background-position:calc(100% - 18px) 50%,calc(100% - 12px) 50%;background-size:6px 6px;background-repeat:no-repeat;padding-right:32px}
@@ -116,6 +116,8 @@ nav.tabs button.on{color:var(--accent)}
 header h1{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sync-status{font-weight:700}.sync-status.ok{color:var(--accent)}.sync-status.off{color:var(--warn)}.sync-status.err{color:var(--danger)}
 input.code{letter-spacing:.3em;text-align:center;font-size:22px;font-weight:700}
+.pw-wrap{display:flex;gap:8px;align-items:stretch}.pw-wrap input{flex:1;min-width:0}.pw-toggle{flex:none;min-width:68px;min-height:var(--tap)}
+.sync-msg{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:var(--card2);border:1px solid var(--line)}.sync-msg.err{color:var(--danger);font-weight:650}.sync-msg.warn{color:var(--text);border-color:var(--warn)}
 /* profiles */
 .hdr-prof{flex:none;min-height:36px;padding:0 12px 0 4px;border-radius:999px;border:1px solid var(--line);background:var(--card2);font-weight:700;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .av{width:28px;height:28px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex:none}
@@ -239,17 +241,17 @@ textarea.share{min-height:250px;margin:12px 0;font:13px/1.45 ui-monospace,SFMono
     <h2>Cloud sync <span class="pill">optional</span></h2>
     <p class="small muted" style="margin-top:0">Back up <b class="syncName">Tom</b>'s log to the cloud and sync it between devices. Everything still works offline without it, and local data is never wiped.</p>
     <p class="small" style="margin:0 0 10px">Status: <span class="sync-status" id="syncStatus">Not signed in</span></p>
-    <div id="syncOut">
-      <div class="field" id="emailWrap"><label for="syncEmail">Email</label><input type="email" id="syncEmail" autocomplete="email" inputmode="email" placeholder="you@example.com"></div>
-      <button class="btn primary block" id="syncSend">✉ Email me a sign-in code</button>
-      <div id="codeWrap" class="hidden">
-        <div class="spacer"></div>
-        <div class="field"><label for="syncCode">Code from the email</label><input type="text" id="syncCode" class="code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456"></div>
-        <button class="btn primary block" id="syncVerify">Sign in</button>
-        <div class="spacer"></div>
-        <div class="row"><button class="btn small" id="syncResend">Resend code</button><button class="btn small" id="syncChange">Change email</button></div>
-      </div>
-    </div>
+    <form id="syncOut" novalidate autocomplete="on">
+      <div class="field"><label for="syncEmail">Email</label><input type="email" id="syncEmail" name="email" autocomplete="username" inputmode="email" autocapitalize="off" spellcheck="false" placeholder="you@example.com"></div>
+      <div class="field"><label for="syncPass">Password</label>
+        <div class="pw-wrap"><input type="password" id="syncPass" name="password" autocomplete="current-password" minlength="8" placeholder="At least 8 characters">
+          <button type="button" class="btn small pw-toggle" id="syncPassToggle" aria-controls="syncPass" aria-pressed="false" aria-label="Show password">Show</button></div></div>
+      <button type="submit" class="btn primary block" id="syncSignIn">Sign in</button>
+      <div class="spacer"></div>
+      <button type="button" class="btn block" id="syncCreate">Create account</button>
+      <p class="small sync-msg hidden" id="syncMsg" role="status" aria-live="polite"></p>
+      <p class="small muted" style="margin:10px 0 0">Forgot it? Ask your workout assistant to reset it.</p>
+    </form>
     <div id="syncIn" class="hidden">
       <p class="small muted" style="margin-top:0">Signed in as <b id="syncWho"></b></p>
       <div class="row"><button class="btn" id="syncNow">⟳ Sync now</button><button class="btn danger" id="syncSignOut">Sign out</button></div>
@@ -994,40 +996,61 @@ const Sync=(function(){
     pill.className='sync-pill '+cls+(!enabled||!st.session?' hidden':'');
     $('#syncNoCfg').classList.toggle('hidden',enabled);$('#syncOut').classList.toggle('hidden',!enabled||!!st.session);$('#syncIn').classList.toggle('hidden',!enabled||!st.session);
     if(st.session)$('#syncWho').textContent=st.session.user.email||st.session.user.id;
-    else{const pend=!!st.pendingEmail;$('#codeWrap').classList.toggle('hidden',!pend);$('#syncSend').classList.toggle('hidden',pend);
-      if(pend&&!$('#syncEmail').value)$('#syncEmail').value=st.pendingEmail;$('#syncEmail').readOnly=pend;}
   }
-  // ---- auth UI ----
-  const redirectTo=()=>{const u=new URL('./',location.href);u.searchParams.set('p',profile.id);return u.href;};
-  async function sendCode(){
-    const email=$('#syncEmail').value.trim().toLowerCase();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){toast('Enter a valid email');return;}
-    if(!navigator.onLine){toast('You are offline');return;}
-    const btn=$('#syncSend');btn.disabled=true;$('#syncResend').disabled=true;
-    try{await http('/auth/v1/otp?redirect_to='+encodeURIComponent(redirectTo()),{method:'POST',body:{email,create_user:true}});
-      const st=get(profile.id);st.pendingEmail=email;st.error='';put(profile.id,st);render();$('#syncCode').value='';$('#syncCode').focus();toast('Code sent – check your email');}
-    catch(e){toast(e.status===429?'Too many emails – wait a minute and try again':'Could not send code: '+e.message);}
-    finally{btn.disabled=false;$('#syncResend').disabled=false;}
+  // ---- auth UI (email + password; email delivery is not used) ----
+  const CONFIRM_MSG='Account created, but email confirmation is on. Ask Tom to turn off Confirm email in Supabase, or ask the assistant to activate your account.';
+  function msg(text,cls){const m=$('#syncMsg');m.textContent=text||'';m.className='small sync-msg '+(cls||'')+(text?'':' hidden');}
+  function authError(e,signup){
+    if(e instanceof TypeError||!navigator.onLine)return 'You are offline – connect and try again';
+    const b=e.body||{},code=b.error_code||b.code||'',txt=String(b.msg||b.message||b.error_description||b.error||e.message||'');
+    if(code==='invalid_credentials'||/invalid login credentials/i.test(txt)||(!signup&&b.error==='invalid_grant'))return 'Wrong email or password';
+    if(code==='email_not_confirmed'||/email not confirmed/i.test(txt))return CONFIRM_MSG.replace('Account created, but email','This account exists, but email');
+    if(code==='user_already_exists'||code==='email_exists'||/already (registered|exists)/i.test(txt))return 'An account with this email already exists – tap Sign in instead';
+    if(code==='weak_password'||/password/i.test(txt)&&/weak|short|characters|least/i.test(txt))return 'That password is too weak – use at least 8 characters'+(/letters|digits|symbols|characters/i.test(txt)?' ('+txt+')':'');
+    if(code==='signup_disabled'||/signups? not allowed|disabled/i.test(txt))return 'Creating new accounts is turned off – ask your workout assistant to set one up';
+    if(e.status===429||/rate limit|too many/i.test(txt))return 'Too many attempts – wait a minute and try again';
+    if(code==='validation_failed'||/valid email|invalid email/i.test(txt))return 'That email address doesn\'t look right';
+    if(e.status>=500)return 'The sign-in server had a problem – try again shortly';
+    return (signup?'Could not create account: ':'Sign-in failed: ')+txt;
   }
-  async function verify(){
-    const pid=profile.id,st=get(pid),token=$('#syncCode').value.replace(/\D/g,'');
-    if(token.length<6){toast('Enter the code from the email');return;}
-    const btn=$('#syncVerify');btn.disabled=true;
-    try{let j;
-      try{j=await http('/auth/v1/verify',{method:'POST',body:{type:'email',email:st.pendingEmail,token}});}
-      catch(e1){if(e1.status!==403&&e1.status!==400)throw e1;   // brand-new user: code may be a sign-up confirmation code
-        j=await http('/auth/v1/verify',{method:'POST',body:{type:'signup',email:st.pendingEmail,token}});}
-      storeSession(pid,j);const s2=get(pid);s2.pendingEmail='';put(pid,s2);$('#syncCode').value='';$('#syncEmail').readOnly=false;
-      render();toast('Signed in – syncing…');await sync(pid);
-      const s3=get(pid);if(s3.lastSync)toast('Synced ✓ – your data is backed up');}
-    catch(e){toast(e.status===403||e.status===400||e.status===401?'That code is wrong or expired':'Sign-in failed: '+e.message);}
-    finally{btn.disabled=false;}
+  function creds(){
+    const email=$('#syncEmail').value.trim().toLowerCase(),password=$('#syncPass').value;
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){msg('Enter a valid email','err');$('#syncEmail').focus();return null;}
+    if(password.length<8){msg('Password must be at least 8 characters','err');$('#syncPass').focus();return null;}
+    if(!navigator.onLine){msg('You are offline – connect and try again','err');return null;}
+    return {email,password};
   }
+  async function afterSignIn(pid,j){
+    storeSession(pid,j);const s2=get(pid);s2.pendingEmail='';put(pid,s2);
+    $('#syncPass').value='';setPwVisible(false);msg('');render();toast('Signed in – syncing…');await sync(pid);
+    const s3=get(pid);if(s3.lastSync)toast('Synced ✓ – your data is backed up');
+  }
+  let busy=false;
+  function setBusy(b){busy=b;$('#syncSignIn').disabled=b;$('#syncCreate').disabled=b;}
+  async function signIn(){
+    if(busy)return;const c=creds();if(!c)return;const pid=profile.id;setBusy(true);msg('');
+    try{const j=await http('/auth/v1/token?grant_type=password',{method:'POST',body:c});
+      if(!j||!j.access_token||!j.user)throw Object.assign(new Error('No session returned'),{status:0});
+      await afterSignIn(pid,j);}
+    catch(e){msg(authError(e,false),'err');}
+    finally{setBusy(false);}
+  }
+  async function createAccount(){
+    if(busy)return;const c=creds();if(!c)return;const pid=profile.id;setBusy(true);msg('');
+    try{const j=await http('/auth/v1/signup',{method:'POST',body:c});
+      if(j&&j.access_token&&j.user){await afterSignIn(pid,j);toast('Account created ✓');}
+      else{$('#syncPass').value='';msg(CONFIRM_MSG,'warn');}}
+    catch(e){msg(authError(e,true),'err');}
+    finally{setBusy(false);}
+  }
+  function setPwVisible(v){const i=$('#syncPass'),b=$('#syncPassToggle');i.type=v?'text':'password';b.textContent=v?'Hide':'Show';
+    b.setAttribute('aria-pressed',String(v));b.setAttribute('aria-label',v?'Hide password':'Show password');}
   async function signOut(){
     const pid=profile.id;if(!confirm(`Sign ${profile.name} out of cloud sync? Data on this device is kept.`))return;
     const st=get(pid);try{if(st.session&&navigator.onLine)await http('/auth/v1/logout',{method:'POST'},pid);}catch(e){}
     const s2=get(pid);s2.session=null;s2.cursor=null;s2.error='';put(pid,s2);live[pid]='';render();toast('Signed out – local data kept');
   }
-  // Magic-link fallback: tokens arrive in the URL hash (#access_token=…). ?p=<profile> says whose.
+  // Legacy magic-link fallback (old emails / Supabase-generated links): tokens arrive in the URL hash. ?p=<profile> says whose.
   async function handleRedirect(){
     if(!location.hash||location.hash.length<2)return;
     const h=new URLSearchParams(location.hash.slice(1));const qp=new URLSearchParams(location.search).get('p');
@@ -1042,11 +1065,10 @@ const Sync=(function(){
       if(pid!==profile.id)switchProfile(pid);render();toast('Signed in – syncing…');sync(pid);}
     catch(e){const s2=get(pid);s2.session=null;put(pid,s2);render();toast('Sign-in link failed: '+e.message);}
   }
-  $('#syncSend').addEventListener('click',sendCode);$('#syncResend').addEventListener('click',sendCode);
-  $('#syncVerify').addEventListener('click',verify);
-  $('#syncCode').addEventListener('input',e=>{const v=e.target.value.replace(/\D/g,'');if(v.length===6&&e.inputType==='insertFromPaste')verify();});
-  $('#syncCode').addEventListener('keydown',e=>{if(e.key==='Enter')verify();});
-  $('#syncChange').addEventListener('click',()=>{const st=get(profile.id);st.pendingEmail='';put(profile.id,st);$('#syncEmail').readOnly=false;$('#syncEmail').value='';render();$('#syncEmail').focus();});
+  $('#syncOut').addEventListener('submit',e=>{e.preventDefault();signIn();});
+  $('#syncCreate').addEventListener('click',createAccount);
+  $('#syncPassToggle').addEventListener('click',()=>setPwVisible($('#syncPass').type==='password'));
+  ['#syncEmail','#syncPass'].forEach(id=>$(id).addEventListener('input',()=>{if($('#syncMsg').classList.contains('err'))msg('');}));
   $('#syncNow').addEventListener('click',()=>sync(profile.id));
   $('#syncPill').addEventListener('click',()=>sync(profile.id));
   $('#syncSignOut').addEventListener('click',signOut);

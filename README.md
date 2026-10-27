@@ -8,7 +8,7 @@ Live: https://tomhine82.github.io/prop-log/
 | File | What |
 |---|---|
 | `index.html` | The whole app (inline CSS/JS) |
-| `sw.js` | Service worker (`proplog-v4`): app shell cache-first; page, `config.js` and `plans/*.json` network-first |
+| `sw.js` | Service worker (`proplog-v5`): app shell cache-first; page, `config.js` and `plans/*.json` network-first |
 | `withings.html` | Withings OAuth callback – forwards `?code=&state=` to the local helper on 127.0.0.1:8765 |
 | `manifest.json`, `icon*.{svg,png}` | PWA manifest + icons |
 | `plans/tom.json`, `plans/nikki.json` | Coach plans – see `PLAN-FORMAT.md` |
@@ -16,8 +16,9 @@ Live: https://tomhine82.github.io/prop-log/
 | `supabase/schema.sql` | Table + Row Level Security for cloud sync – paste into the Supabase SQL Editor |
 | `tools/make_config.py` | Generates `config.js` from `SUPABASE_ANON_KEY` |
 | `tools/withings_auth.py`, `tools/withings_sync.py`, `tools/withings_common.py` | Withings body-stats sync (runs on the box, not in the browser) |
+| `tools/set_password.py` | Set/reset a user's password or create the user (admin API, service key) |
 | `supabase/withings.sql` | Optional grant for the sync's service role (only if it reports permission denied) |
-| `tests/` | `test_withings_tools.py` (mocked Withings + Supabase), `test_withings_app.py` (Playwright) |
+| `tests/` | `test_withings_tools.py` (mocked Withings + Supabase), `test_withings_app.py` (Playwright), `test_set_password.py` |
 
 ## Data
 
@@ -26,9 +27,12 @@ fully offline. JSON export/import is on the Data tab.
 
 ## Optional cloud sync (Supabase)
 
-* Sign-in: each person enters their own email on the Data tab, gets a 6-digit code by email and types it
-  in (works inside the installed iPhone app; a magic link also works as a fallback if the email
-  template still contains a link). The signed-in account is linked to the active person only.
+* Sign-in: email + password on the Data tab ("Sign in", or "Create account" the first time; 8+ characters,
+  show/hide toggle). No emails are sent (BT rejects the Supabase/Brevo mail), so in Supabase → Authentication →
+  Providers → Email, turn **Confirm email** off – otherwise a new account shows "email confirmation is on" and
+  can't sign in until it's activated. There is no "forgot password" email: reset or create accounts with
+  `NEW_PASSWORD=… python3 tools/set_password.py --email you@example.com` (needs `SUPABASE_SERVICE_KEY`; also
+  confirms the account). The signed-in account is linked to the active person only. Old magic links still work.
 * Sync: one row per session / bodyweight entry in `public.proplog_data`, last-write-wins by
   `updated_at`, deletes are tombstones (`deleted = true`). Pull on open / return to the app,
   push a moment after every save, offline changes queue and upload when back online.
