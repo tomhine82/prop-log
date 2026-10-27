@@ -1,12 +1,245 @@
 {
   "version": 1,
   "athlete": "Nikki",
-  "placeholder": true,
-  "title": "PLACEHOLDER – no plan yet",
-  "author": "",
+  "title": "Beginner strength & fitness (knee-friendly)",
+  "author": "Nikki Workout Bot",
   "updated": "2026-10-27",
-  "notes": "PLACEHOLDER: Nikki's plan will be written by her coach bot. Replace this file with a real plan in the same schema (see PLAN-FORMAT.md) and remove \"placeholder\": true.",
+  "notes": "Knee-friendly: no lunges, jumping or heavy squats. Start light; add reps until all sets feel comfortable, then go up a little in weight. If knee pain goes above about 3/10 during a session or the next day, drop that exercise and flag it.",
   "weeks": [
-    { "label": "Placeholder", "days": [] }
+    {
+      "label": "Weekly plan",
+      "days": [
+        {
+          "day": "Mon",
+          "title": "Strength A",
+          "type": "Other",
+          "focus": "Full body strength",
+          "notes": "",
+          "exercises": [
+            {
+              "name": "Glute bridge",
+              "sets": 3,
+              "reps": "12",
+              "targetKg": null,
+              "rest": "60s",
+              "notes": "Bodyweight. Squeeze glutes at top"
+            },
+            {
+              "name": "Dumbbell Romanian deadlift",
+              "sets": 3,
+              "reps": "10",
+              "targetKg": null,
+              "rest": "90s",
+              "notes": "Light DBs, soft knees, hinge at hips"
+            },
+            {
+              "name": "Dumbbell bench press",
+              "sets": 3,
+              "reps": "10",
+              "targetKg": null,
+              "rest": "90s",
+              "notes": ""
+            },
+            {
+              "name": "One-arm dumbbell row",
+              "sets": 3,
+              "reps": "10 each side",
+              "targetKg": null,
+              "rest": "60s",
+              "notes": ""
+            },
+            {
+              "name": "Kettlebell farmer's carry",
+              "sets": 3,
+              "reps": "30m",
+              "targetKg": null,
+              "rest": "60s",
+              "notes": "Tall posture"
+            },
+            {
+              "name": "Dead bug",
+              "sets": 3,
+              "reps": "8 each side",
+              "targetKg": null,
+              "rest": "45s",
+              "notes": "Bodyweight. Lower back flat"
+            }
+          ]
+        },
+        {
+          "day": "Tue",
+          "title": "Turbo easy",
+          "type": "Ride",
+          "focus": "Easy cardio",
+          "notes": "",
+          "exercises": [
+            {
+              "name": "Turbo bike",
+              "sets": 1,
+              "reps": "20-25 min",
+              "targetKg": null,
+              "rest": "",
+              "notes": "Easy, conversational pace. From week 3 add 5 x 1 min a bit harder with 2 min easy between"
+            }
+          ]
+        },
+        {
+          "day": "Wed",
+          "title": "Strength B",
+          "type": "Other",
+          "focus": "Full body strength",
+          "notes": "",
+          "exercises": [
+            {
+              "name": "Hip thrust (back on bench)",
+              "sets": 3,
+              "reps": "12",
+              "targetKg": null,
+              "rest": "60s",
+              "notes": ""
+            },
+            {
+              "name": "Kettlebell deadlift",
+              "sets": 3,
+              "reps": "10",
+              "targetKg": null,
+              "rest": "90s",
+              "notes": "Hinge, not squat"
+            },
+            {
+              "name": "Seated dumbbell shoulder press",
+              "sets": 3,
+              "reps": "10",
+              "targetKg": null,
+              "rest": "60s",
+              "notes": ""
+            },
+            {
+              "name": "Inverted row (barbell in rack)",
+              "sets": 3,
+              "reps": "8",
+              "targetKg": null,
+              "rest": "60s",
+              "notes": "Bodyweight. Raise bar to make easier"
+            },
+            {
+              "name": "Sit to bench and stand",
+              "sets": 2,
+              "reps": "10",
+              "targetKg": null,
+              "rest": "60s",
+              "notes": "Optional, only if knees are pain-free"
+            },
+            {
+              "name": "Side plank",
+              "sets": 3,
+              "reps": "15-20s each side",
+              "targetKg": null,
+              "rest": "45s",
+              "notes": "Bodyweight"
+            }
+          ]
+        },
+        {
+          "day": "Thu",
+          "title": "Rest or easy turbo",
+          "type": "Ride",
+          "focus": "Optional cardio",
+          "notes": "",
+          "exercises": [
+            {
+              "name": "Turbo bike",
+              "sets": 1,
+              "reps": "20 min",
+              "targetKg": null,
+              "rest": "",
+              "notes": "Optional, easy pace"
+            }
+          ]
+        },
+        {
+          "day": "Fri",
+          "title": "Strength A",
+          "type": "Other",
+          "focus": "Full body strength (same as Monday)",
+          "notes": "",
+          "exercises": [
+            {
+              "name": "Glute bridge",
+              "sets": 3,
+              "reps": "12",
+              "targetKg": null,
+              "rest": "60s",
+              "notes": "Bodyweight. Squeeze glutes at top"
+            },
+            {
+              "name": "Dumbbell Romanian deadlift",
+              "sets": 3,
+              "reps": "10",
+              "targetKg": null,
+              "rest": "90s",
+              "notes": "Light DBs, soft knees, hinge at hips"
+            },
+            {
+              "name": "Dumbbell bench press",
+              "sets": 3,
+              "reps": "10",
+              "targetKg": null,
+              "rest": "90s",
+              "notes": ""
+            },
+            {
+              "name": "One-arm dumbbell row",
+              "sets": 3,
+              "reps": "10 each side",
+              "targetKg": null,
+              "rest": "60s",
+              "notes": ""
+            },
+            {
+              "name": "Kettlebell farmer's carry",
+              "sets": 3,
+              "reps": "30m",
+              "targetKg": null,
+              "rest": "60s",
+              "notes": "Tall posture"
+            },
+            {
+              "name": "Dead bug",
+              "sets": 3,
+              "reps": "8 each side",
+              "targetKg": null,
+              "rest": "45s",
+              "notes": "Bodyweight. Lower back flat"
+            }
+          ]
+        },
+        {
+          "day": "Sat",
+          "title": "Long dog walk",
+          "type": "Other",
+          "focus": "Cardio",
+          "notes": "",
+          "exercises": [
+            {
+              "name": "Dog walk",
+              "sets": 1,
+              "reps": "Long walk",
+              "targetKg": null,
+              "rest": "",
+              "notes": "Counts as the session. If no big walk today: turbo bike 1 x 30 min easy"
+            }
+          ]
+        },
+        {
+          "day": "Sun",
+          "title": "Rest",
+          "type": "Other",
+          "focus": "Rest",
+          "notes": "Normal dog walk only",
+          "exercises": []
+        }
+      ]
+    }
   ]
 }
