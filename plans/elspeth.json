@@ -36,12 +36,21 @@
         },
         {
           "day": "Wed",
+          "title": "Aqua aerobics",
+          "type": "Other",
+          "focus": "Your usual class",
+          "exercises": [
+            { "name": "Aqua aerobics", "sets": 1, "reps": "1 class", "targetKg": null }
+          ]
+        },
+        {
+          "day": "Thu",
           "title": "Gym B",
           "type": "Other",
           "focus": "Legs, shoulders and balance",
           "notes": "About 45 min including the pool and jacuzzi.",
           "exercises": [
-            { "name": "Cross trainer or recumbent bike", "sets": 1, "reps": "10 min", "targetKg": null, "notes": "Easy pace" },
+            { "name": "Rowing machine", "sets": 1, "reps": "10 min", "targetKg": null, "notes": "Easy pace, low resistance (damper 3-4), push with the legs first" },
             { "name": "Leg extension", "sets": 2, "reps": "12", "targetKg": null, "rest": "1 min" },
             { "name": "Seated leg curl", "sets": 2, "reps": "12", "targetKg": null, "rest": "1 min" },
             { "name": "Lat pulldown", "sets": 2, "reps": "12", "targetKg": null, "rest": "1 min", "notes": "Pull bar to top of chest" },
@@ -49,15 +58,6 @@
             { "name": "Standing side leg raise", "sets": 2, "reps": "10/leg", "targetKg": null, "rest": "1 min", "notes": "Hold a rail or machine for balance" },
             { "name": "Pool walking", "sets": 1, "reps": "10 min", "targetKg": null },
             { "name": "Jacuzzi", "sets": 1, "reps": "10 min", "targetKg": null }
-          ]
-        },
-        {
-          "day": "Thu",
-          "title": "Aqua aerobics",
-          "type": "Other",
-          "focus": "Your usual class",
-          "exercises": [
-            { "name": "Aqua aerobics", "sets": 1, "reps": "1 class", "targetKg": null }
           ]
         },
         {
