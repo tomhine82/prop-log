@@ -157,6 +157,16 @@ a.vid{flex:none;display:inline-flex;align-items:center;gap:3px;min-height:28px;p
   text-decoration:none;white-space:nowrap;background:var(--accent);color:var(--accent-ink);border:1px solid var(--accent);vertical-align:middle}
 a.vid:active{transform:scale(.97)}
 .pex .pn{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+/* in-app plan editor */
+.banner.stack{flex-wrap:wrap}.banner.stack b{flex:1 1 100%}.banner.stack .btn{flex:1}
+.plan-local{font-size:13px;color:var(--warn);font-weight:650;margin-top:6px}
+.plan-changes{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:13px}
+.plan-changes li{margin:3px 0}
+.ped h2{text-transform:none;letter-spacing:0;color:var(--text);font-size:17px;margin:0}
+.rest-toggle{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;margin:0}
+.rest-toggle input{width:22px;height:22px;min-height:22px;accent-color:var(--accent)}
+.ped .ex{margin-bottom:10px}
+.ped-actions{display:flex;gap:8px}.ped-actions .btn{flex:1}
 </style>
 </head>
 <body>
@@ -327,7 +337,7 @@ const PROFILES=[{id:'tom',name:'Tom',startBw:135},{id:'nikki',name:'Nikki',start
 const PROFILE_ALIAS={mum:'elspeth'};
 function canonicalProfile(id){const a=PROFILE_ALIAS[id]||id;return PROFILES.some(p=>p.id===a)?a:'';}
 const ACTIVE_KEY='proplog.profile', MIGRATED_KEY='proplog.migrated.v2';
-const keysFor=id=>({data:'proplog.v1:'+id,draft:'proplog.draft.v1:'+id,exp:'proplog.lastExport:'+id,plan:'proplog.plan:'+id,settings:'proplog.settings:'+id});
+const keysFor=id=>({data:'proplog.v1:'+id,draft:'proplog.draft.v1:'+id,exp:'proplog.lastExport:'+id,plan:'proplog.plan:'+id,planEdit:'proplog.planEdit:'+id,settings:'proplog.settings:'+id});
 let profile=PROFILES[0], KEY, DRAFT_KEY, EXPORT_KEY, PLAN_KEY, SETTINGS_KEY;
 (function migrateLegacy(){
   try{if(localStorage.getItem(MIGRATED_KEY))return;const k=keysFor('tom');
@@ -721,11 +731,15 @@ const normDay=v=>{const t=String(v||'').slice(0,3).toLowerCase();return DAYS.fin
 
 // ---------- plan (plans/<profile>.json, network-first) ----------
 let plan=null,planSource='none',planSavedAt=null,planLoading=false,planError='',planFetchedAt=0;
+let coachPlan=null, planEdit=null, planEditing=false, editDraft=null;
 const validPlan=p=>p&&typeof p==='object'&&Array.isArray(p.weeks);
 function cachedPlan(){try{const o=JSON.parse(localStorage.getItem(PLAN_KEY));if(o&&validPlan(o.plan))return o;}catch(e){}return null;}
+function readPlanEdit(id){try{const o=JSON.parse(localStorage.getItem(keysFor(id||profile.id).planEdit));if(o&&validPlan(o.plan))return o;}catch(e){}return null;}
+function writePlanEdit(id,rec){const k=keysFor(id||profile.id).planEdit;if(rec)localStorage.setItem(k,JSON.stringify(rec));else localStorage.removeItem(k);}
+function useEditedPlan(){plan=(planEdit&&validPlan(planEdit.plan))?planEdit.plan:coachPlan;}
 async function loadPlan(){
   const id=profile.id,url='plans/'+id+'.json';
-  planLoading=true;planFetchedAt=Date.now();if(current==='plan')renderPlan();
+  planLoading=true;planFetchedAt=Date.now();if(current==='plan'&&!planEditing)renderPlan();
   let p=null,src='none',savedAt=null,err='';
   try{
     const r=await fetch(url,{cache:'no-store'});
@@ -738,7 +752,8 @@ async function loadPlan(){
   if(id!==profile.id)return;
   if(!p){const c=cachedPlan();if(c){p=c.plan;src='offline';}}
   if(src==='offline'){const c=cachedPlan();savedAt=c?c.savedAt:null;}
-  plan=p;planSource=p?src:'none';planSavedAt=savedAt;planError=err;planLoading=false;
+  coachPlan=p;planSource=p?src:'none';planSavedAt=savedAt;planError=err;planLoading=false;
+  if(!planEditing){planEdit=readPlanEdit(id);useEditedPlan();}
   if(current==='plan')renderPlan();
 }
 function planWeek(p,ds){
@@ -755,19 +770,117 @@ function planDayFor(ds){if(!plan||plan.placeholder)return null;const w=planWeek(
 function planVideoFor(name){const n=String(name||'').trim().toLowerCase();if(!n||!plan||!Array.isArray(plan.weeks))return '';
   for(const w of plan.weeks)for(const d of (w&&w.days)||[])for(const e of (d&&d.exercises)||[])if(e&&e.video&&String(e.name||'').trim().toLowerCase()===n&&YT_LINK.test(String(e.video).trim()))return String(e.video).trim();return '';}
 function planTarget(e){return `${e.sets||'?'} × ${e.reps||'?'}${e.targetKg!=null&&e.targetKg!==''?` @ ${fmtKg(+e.targetKg)} kg`:''}`;}
+function exDose(e){const kg=e.targetKg!=null&&e.targetKg!==''?` @ ${fmtKg(+e.targetKg)} kg`:'';return `${e.sets==null?'?':e.sets}x${e.reps==null||e.reps===''?'?':e.reps}${kg}`;}
+function dayIndex(week){const m={};(week&&week.days||[]).forEach(d=>{const k=normDay(d.day);if(k)m[k]=d;});return m;}
+// Human-readable diff from the coach file to the edited plan, computed when the athlete saves.
+function planChanges(base, edited){
+  const lines=[], bw=(base&&base.weeks)||[], ew=(edited&&edited.weeks)||[], n=Math.max(bw.length,ew.length);
+  for(let wi=0;wi<n;wi++){
+    const prefix=n>1?((ew[wi]&&ew[wi].label)||(bw[wi]&&bw[wi].label)||('Week '+(wi+1)))+' · ':'';
+    const bd=dayIndex(bw[wi]), ed=dayIndex(ew[wi]);
+    DAYS.forEach(day=>{
+      const b=bd[day], e=ed[day], p=prefix+day+': ';
+      if(!b&&!e)return;
+      if(b&&!e){lines.push(p+'marked as rest');(b.exercises||[]).forEach(ex=>lines.push(p+'removed '+ex.name));return;}
+      if(!b&&e){lines.push(p+'added '+(e.title||e.type||'session'));(e.exercises||[]).forEach(ex=>lines.push(p+'added '+ex.name+' '+exDose(ex)));return;}
+      if(String(b.title||'')!==String(e.title||''))lines.push(p+'title '+(b.title||'—')+' -> '+(e.title||'—'));
+      if(String(b.type||'')!==String(e.type||''))lines.push(p+'type '+(b.type||'—')+' -> '+(e.type||'—'));
+      const ee=[...(e.exercises||[])];const used=new Set();
+      (b.exercises||[]).forEach(bx=>{
+        const i=ee.findIndex((ex,idx)=>!used.has(idx)&&String(ex.name||'').trim().toLowerCase()===String(bx.name||'').trim().toLowerCase());
+        if(i<0){lines.push(p+'removed '+bx.name);return;}
+        used.add(i);const ex=ee[i];
+        const dose=String(bx.sets)!==String(ex.sets)||String(bx.reps??'')!==String(ex.reps??'')||String(bx.targetKg??'')!==String(ex.targetKg??'');
+        if(dose)lines.push(p+bx.name+' '+exDose(bx)+' -> '+exDose(ex));
+        else{
+          if(String(bx.rest||'')!==String(ex.rest||''))lines.push(p+bx.name+' rest '+(bx.rest||'—')+' -> '+(ex.rest||'—'));
+          if(String(bx.notes||'')!==String(ex.notes||''))lines.push(p+bx.name+' notes changed');
+        }
+      });
+      ee.forEach((ex,idx)=>{if(!used.has(idx)&&String(ex.name||'').trim())lines.push(p+'added '+ex.name+' '+exDose(ex));});
+      const order=list=>{const s=[];(list||[]).forEach(x=>{const nm=String(x.name||'').trim().toLowerCase();if(nm&&!s.includes(nm))s.push(nm);});return s;};
+      const bo=order(b.exercises).filter(nm=>order(e.exercises).includes(nm)), eo=order(e.exercises).filter(nm=>order(b.exercises).includes(nm));
+      if(bo.length>1&&bo.join('|')!==eo.join('|'))lines.push(p+'reordered exercises');
+    });
+  }
+  return lines;
+}
+function coachStamp(){return String(coachPlan&&coachPlan.updated||'').slice(0,10);}
+function newerCoach(){if(!planEdit||!coachPlan)return false;const c=coachStamp(),b=String(planEdit.basedOnUpdated||'').slice(0,10);return /^\d{4}-\d{2}-\d{2}$/.test(c)&&/^\d{4}-\d{2}-\d{2}$/.test(b)&&c>b;}
+function planBlocked(){return !!(planEdit&&window.__plSync&&window.__plSync.state(profile.id).planBlocked);}
+function cleanEx(e){
+  const o={name:String(e.name||'').trim(),sets:Math.max(1,parseInt(e.sets,10)||1),reps:String(e.reps==null?'':e.reps).trim(),targetKg:e.targetKg==null||e.targetKg===''?null:+e.targetKg};
+  if(!isFinite(o.targetKg))o.targetKg=null;
+  if(String(e.rest||'').trim())o.rest=String(e.rest).trim();
+  if(String(e.notes||'').trim())o.notes=String(e.notes).trim();
+  if(e.video)o.video=String(e.video);
+  return o;
+}
+function cleanDay(d){
+  const o={day:d.day,title:String(d.title||'').trim()||d.day,type:TYPES.includes(d.type)?d.type:'Other',exercises:(d.exercises||[]).map(cleanEx).filter(e=>e.name)};
+  if(String(d.focus||'').trim())o.focus=String(d.focus).trim();
+  if(String(d.notes||'').trim())o.notes=String(d.notes).trim();
+  return o;
+}
+function startEdit(){
+  if(!plan||plan.placeholder||!plan.weeks)return;
+  const src=JSON.parse(JSON.stringify(plan));
+  const w=planWeek(src,today());const idx=src.weeks.indexOf(w);if(idx<0)return;
+  const by=dayIndex(w);
+  editDraft={plan:src,weekIdx:idx,coachNote:planEdit&&planEdit.coachNote||'',days:DAYS.map(day=>by[day]||{day,title:'Rest',type:'Other',exercises:[],_rest:true})};
+  planEditing=true;renderPlan();const n=$('#coachNote');if(n)n.focus();
+}
+function cancelEditPlan(){planEditing=false;editDraft=null;renderPlan();}
+function discardEdits(){
+  writePlanEdit(profile.id,null);planEdit=null;planEditing=false;editDraft=null;useEditedPlan();
+  if(window.__plSync)window.__plSync.track(profile.id,db);
+  renderPlan();toast("Back to your coach's plan");
+}
+function savePlanEdit(){
+  if(!editDraft)return;
+  const next=JSON.parse(JSON.stringify(editDraft.plan));
+  const srcWeek=next.weeks[editDraft.weekIdx]||{days:[]};
+  srcWeek.days=editDraft.days.filter(d=>!d._rest).map(cleanDay);
+  next.weeks[editDraft.weekIdx]=srcWeek;
+  const changes=planChanges(coachPlan||plan,next);
+  const note=String(editDraft.coachNote||'').trim();
+  if(note)changes.push('Note to coach: '+note);
+  const rec={plan:next,basedOnUpdated:(planEdit&&planEdit.basedOnUpdated)||coachStamp()||String(next.updated||'').slice(0,10),editedAt:Date.now(),coachNote:note,changes};
+  writePlanEdit(profile.id,rec);planEdit=rec;plan=next;planEditing=false;editDraft=null;
+  if(window.__plSync)window.__plSync.track(profile.id,db);
+  renderPlan();toast('Plan saved');
+}
+function keepEdits(){
+  if(!planEdit||!coachPlan)return;
+  planEdit.basedOnUpdated=coachStamp();planEdit.editedAt=Date.now();
+  writePlanEdit(profile.id,planEdit);
+  if(window.__plSync)window.__plSync.track(profile.id,db);
+  renderPlan();toast('Keeping your edits');
+}
+function editDateLabel(ts){try{return new Date(ts).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}catch(e){return '';}}
 function renderPlan(){
   const el=$('#planBody');const who=esc(profile.name);
-  if(!plan){el.innerHTML=planLoading?'<div class="empty">Loading plan…</div>':
+  if(!planEditing){planEdit=readPlanEdit();useEditedPlan();}
+  if(!plan&&!planEditing){el.innerHTML=planLoading?'<div class="empty">Loading plan…</div>':
     `<div class="empty">No plan available for ${who} yet.<br><span class="small">${planError?`Couldn't load plans/${esc(profile.id)}.json (${esc(planError)}).`:''}</span></div>`;return;}
-  const t=today(),mon=mondayOf(t),week=planWeek(plan,t);
-  const upd=/^\d{4}-\d{2}-\d{2}/.test(plan.updated||'')?fmtDate(plan.updated.slice(0,10),{day:'numeric',month:'short',year:'numeric'}):(plan.updated||'unknown');
+  const shown=planEditing?editDraft.plan:plan;
+  const t=today(),mon=mondayOf(t),week=planWeek(shown,t);
+  const upd=/^\d{4}-\d{2}-\d{2}/.test(shown.updated||'')?fmtDate(shown.updated.slice(0,10),{day:'numeric',month:'short',year:'numeric'}):(shown.updated||'unknown');
   const srcTxt=planSource==='network'?'Up to date':`Offline – showing saved copy${planSavedAt?' from '+new Date(planSavedAt).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''}`;
-  let h=`<div class="card"><h2>${who}'s plan${plan.title?' · '+esc(plan.title):''}</h2>
-    <div class="small"><b>Updated ${esc(upd)}</b>${plan.author?` · by ${esc(plan.author)}`:''}</div>
+  let h=`<div class="card"><h2>${who}'s plan${shown.title?' · '+esc(shown.title):''}</h2>
+    <div class="small"><b>Updated ${esc(upd)}</b>${shown.author?` · by ${esc(shown.author)}`:''}
+    ${planEdit&&!planEditing?`<span class="pill acc" id="planEditedTag">Edited by you</span> <span class="small muted">${esc(editDateLabel(planEdit.editedAt))}</span>`:''}</div>
     <div class="src ${planSource==='network'?'':'off'}" id="planSrc">${esc(srcTxt)}</div>
-    ${plan.notes?`<p class="small muted" style="margin:8px 0 0">${esc(plan.notes)}</p>`:''}</div>`;
-  if(plan.placeholder||!week||!week.days.length){
-    el.innerHTML=h+`<div class="banner"><b>${plan.placeholder?`Placeholder – ${who}'s plan hasn't been written yet.`:'This plan has no days.'}</b></div>`;return;}
+    ${planBlocked()?`<div class="plan-local" id="planLocalNote">Saved on this device</div>`:''}
+    ${shown.notes&&!planEditing?`<p class="small muted" style="margin:8px 0 0">${esc(shown.notes)}</p>`:''}
+    ${planEdit&&!planEditing&&planEdit.coachNote?`<p class="small" style="margin:8px 0 0"><b>Note to your coach:</b> ${esc(planEdit.coachNote)}</p>`:''}
+    ${planEdit&&!planEditing&&planEdit.changes&&planEdit.changes.length?`<ul class="plan-changes" id="planChanges">${planEdit.changes.map(c=>`<li>${esc(c)}</li>`).join('')}</ul>`:''}
+    ${!planEditing&&shown&&!shown.placeholder?`<div class="row" style="margin-top:12px"><button type="button" class="btn block" id="editPlan">Edit plan</button>${planEdit?`<button type="button" class="btn block" id="planReset">Reset to coach's plan</button>`:''}</div>`:''}
+    </div>`;
+  if(newerCoach()&&!planEditing)h=`<div class="banner stack" id="coachBanner"><b>Your coach sent a new plan</b><button type="button" class="btn small primary" id="useNewPlan">Use new plan</button><button type="button" class="btn small" id="keepEdits">Keep my edits</button></div>`+h;
+  if(planEditing){el.innerHTML=h+renderEditor();return;}
+  if(shown.placeholder||!week||!week.days.length){
+    el.innerHTML=h+`<div class="banner"><b>${shown.placeholder?`Placeholder – ${who}'s plan hasn't been written yet.`:'This plan has no days.'}</b></div>`;return;}
   h+=`<p class="small muted" style="margin:0 0 8px">${esc(week.label||'This week')} · w/c ${esc(fmtDate(mon,{day:'numeric',month:'short'}))}</p>`;
   for(let i=0;i<7;i++){
     const ds=addDays(mon,i),d=week.days.find(x=>normDay(x.day)===DAYS[i]),isToday=ds===t,exs=d&&Array.isArray(d.exercises)?d.exercises:[];
@@ -783,7 +896,79 @@ function renderPlan(){
   }
   el.innerHTML=h;
 }
-$('#planBody').addEventListener('click',ev=>{const b=ev.target.closest('[data-start]');if(b)startFromPlan(b.dataset.start);});
+function renderEditor(){
+  const typeOpts=cur=>TYPES.concat(TYPES.includes(cur)?[]:[cur]).map(t=>`<option${t===cur?' selected':''}>${esc(t)}</option>`).join('');
+  const exHtml=(e,i)=>`<div class="ex" data-i="${i}">
+      <div class="field"><label>Exercise</label><input type="text" data-field="name" value="${esc(e.name||'')}" autocomplete="off"></div>
+      <div class="row">
+        <div class="field"><label>Sets</label><input type="number" data-field="sets" min="1" max="30" inputmode="numeric" value="${esc(e.sets==null?3:e.sets)}"></div>
+        <div class="field"><label>Reps</label><input type="text" data-field="reps" value="${esc(e.reps==null?'':e.reps)}" autocomplete="off"></div>
+        <div class="field"><label>Target kg</label><input type="number" data-field="kg" inputmode="decimal" step="0.5" min="0" placeholder="blank" value="${e.targetKg==null||e.targetKg===''?'':esc(e.targetKg)}"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Rest</label><input type="text" data-field="rest" value="${esc(e.rest||'')}" autocomplete="off"></div>
+        <div class="field"><label>Notes</label><input type="text" data-field="notes" value="${esc(e.notes||'')}" autocomplete="off"></div>
+      </div>
+      <div class="ped-actions"><button type="button" class="btn small" data-up aria-label="Move up">↑</button><button type="button" class="btn small" data-down aria-label="Move down">↓</button><button type="button" class="btn small danger" data-del>Remove</button></div>
+    </div>`;
+  const days=editDraft.days.map(d=>`<div class="card ped" data-day="${d.day}">
+      <div class="row" style="align-items:center;margin-bottom:${d._rest?'0':'10px'}"><h2>${d.day}</h2>
+        <label class="rest-toggle"><input type="checkbox" data-field="rest"${d._rest?' checked':''}> Rest day</label></div>
+      <div class="ped-body${d._rest?' hidden':''}">
+        <div class="field"><label>Title</label><input type="text" data-field="title" value="${esc(d.title||'')}" autocomplete="off"></div>
+        <div class="field"><label>Type</label><select data-field="type">${typeOpts(d.type||'Other')}</select></div>
+        ${(d.exercises||[]).map(exHtml).join('')}
+        <button type="button" class="btn block" data-add>＋ Add exercise</button>
+      </div></div>`).join('');
+  return `<div class="card"><h2>Note to my coach</h2>
+      <textarea id="coachNote" placeholder="e.g. knee sore, swap lunges · can only train Tue/Thu">${esc(editDraft.coachNote||'')}</textarea></div>
+    ${days}
+    <div class="sticky-save"><div class="row"><button type="button" class="btn" id="planCancel">Cancel</button><button type="button" class="btn primary" id="planSave">Save</button></div></div>
+    <div class="spacer"></div>
+    <button type="button" class="btn danger block" id="planReset">Reset to coach's plan</button>`;
+}
+function editorDay(el){const card=el.closest&&el.closest('[data-day]');return card&&editDraft&&editDraft.days.find(d=>d.day===card.dataset.day);}
+function onPlanInput(ev){
+  if(!planEditing||!editDraft)return;
+  const t=ev.target;if(t.id==='coachNote'){editDraft.coachNote=t.value;return;}
+  const card=t.closest('[data-day]');if(!card)return;
+  const day=editorDay(t);if(!day)return;
+  if(t.dataset.field==='rest'&&t.type==='checkbox'){day._rest=t.checked;renderPlan();return;}
+  if(t.dataset.field==='title'){day.title=t.value;return;}
+  if(t.dataset.field==='type'){day.type=t.value;return;}
+  const wrap=t.closest('[data-i]');if(!wrap)return;
+  const e=day.exercises[+wrap.dataset.i];if(!e)return;
+  if(t.dataset.field==='name')e.name=t.value;
+  else if(t.dataset.field==='sets')e.sets=Math.max(1,parseInt(t.value,10)||1);
+  else if(t.dataset.field==='reps')e.reps=t.value;
+  else if(t.dataset.field==='kg')e.targetKg=String(t.value).trim()===''?null:num(t.value);
+  else if(t.dataset.field==='rest')e.rest=t.value;
+  else if(t.dataset.field==='notes')e.notes=t.value;
+}
+$('#planBody').addEventListener('input',onPlanInput);
+$('#planBody').addEventListener('change',onPlanInput);
+$('#planBody').addEventListener('click',ev=>{
+  const t=ev.target;
+  if(t.closest('#editPlan')){startEdit();return;}
+  if(t.closest('#planCancel')){cancelEditPlan();return;}
+  if(t.closest('#planSave')){savePlanEdit();return;}
+  if(t.closest('#planReset')){if(confirm("Discard your edits and go back to your coach's plan?"))discardEdits();return;}
+  if(t.closest('#useNewPlan')){if(confirm("Replace your edits with your coach's new plan?"))discardEdits();return;}
+  if(t.closest('#keepEdits')){keepEdits();return;}
+  if(planEditing&&editDraft){
+    const up=t.closest('[data-up]'),down=t.closest('[data-down]'),del=t.closest('[data-del]'),add=t.closest('[data-add]');
+    if(up||down||del||add){
+      const day=editorDay(t);if(!day)return;
+      if(add){day.exercises=day.exercises||[];day.exercises.push({name:'',sets:3,reps:'8',targetKg:null,rest:'',notes:''});renderPlan();return;}
+      const i=+t.closest('[data-i]').dataset.i;
+      if(del)day.exercises.splice(i,1);
+      else if(up&&i>0){const x=day.exercises.splice(i,1)[0];day.exercises.splice(i-1,0,x);}
+      else if(down&&i<day.exercises.length-1){const x=day.exercises.splice(i,1)[0];day.exercises.splice(i+1,0,x);}
+      renderPlan();return;
+    }
+  }
+  const b=t.closest('[data-start]');if(b)startFromPlan(b.dataset.start);
+});
 function startFromPlan(dayName){
   const week=planWeek(plan,today());const d=week&&week.days.find(x=>normDay(x.day)===dayName);if(!d)return;
   if(draft.id&&!confirm('Stop editing the saved session and start this planned one instead?'))return;
@@ -871,21 +1056,30 @@ $('#histShare').addEventListener('click',openShare);
 $('#dataShare').addEventListener('click',openShare);
 
 // ---------- cloud sync (optional, Supabase via plain fetch – no SDK) ----------
-// Records: kind 'session' (id = session id) and 'bodyweight' (id = date). Last-write-wins per
-// record by updatedAt; deletes become tombstones. Per-profile state in proplog.sync:<profile>.
+// Records: kind 'session' (id = session id), 'bodyweight' (id = date) and 'plan' (id = 'current',
+// the athlete's edited plan for the coach bot). Last-write-wins per record by updatedAt; deletes
+// become tombstones. Per-profile state in proplog.sync:<profile>. A 'plan' row is rejected with
+// HTTP 400 until supabase/plan_edits.sql widens proplog_data_kind_chk; that edit stays on the
+// device (planBlocked) and is retried on the next sync.
 const Sync=(function(){
   const CFG=window.PROPLOG_CONFIG||{};const URLB=(CFG.supabaseUrl||'').replace(/\/$/,''),APIKEY=CFG.supabaseKey||'';
   const enabled=!!(URLB&&APIKEY);const TABLE='proplog_data';
   const skey=pid=>'proplog.sync:'+pid;
-  const blank=()=>({session:null,cursor:null,lastSync:null,queue:[],tombs:{},known:null,status:'',error:'',pendingEmail:''});
+  const blank=()=>({session:null,cursor:null,lastSync:null,queue:[],tombs:{},known:null,status:'',error:'',pendingEmail:'',planBlocked:false});
   function get(pid){try{return Object.assign(blank(),JSON.parse(localStorage.getItem(skey(pid)))||{});}catch(e){return blank();}}
   function put(pid,st){localStorage.setItem(skey(pid),JSON.stringify(st));}
-  const recKeys=d=>{const m={};d.sessions.forEach(s=>m['session:'+s.id]=+s.updatedAt||0);d.bodyweight.forEach(b=>m['bodyweight:'+b.date]=+b.updatedAt||0);return m;};
+  function planPayload(pid){
+    const e=readPlanEdit(pid);if(!e||!validPlan(e.plan))return null;
+    const editedAt=+e.editedAt||0;
+    return {editedAt,data:{plan:e.plan,basedOnUpdated:e.basedOnUpdated||'',editedAt,coachNote:e.coachNote||'',changes:Array.isArray(e.changes)?e.changes:[]}};
+  }
+  const recKeys=(pid,d)=>{const m={};d.sessions.forEach(s=>m['session:'+s.id]=+s.updatedAt||0);d.bodyweight.forEach(b=>m['bodyweight:'+b.date]=+b.updatedAt||0);
+    const pr=planPayload(pid);if(pr)m['plan:current']=pr.editedAt;return m;};
   const readDB=pid=>pid===profile.id?db:(()=>{try{const d=JSON.parse(localStorage.getItem(keysFor(pid).data));if(d&&Array.isArray(d.sessions))return normalise(d);}catch(e){}return {version:1,sessions:[],bodyweight:[]};})();
   function writeDB(pid,d){localStorage.setItem(keysFor(pid).data,JSON.stringify(d));if(pid===profile.id)db=d;}
   // Called after every local save: diff against last known state -> queue changed keys, tombstone removed ones.
   function track(pid,d,opts){
-    opts=opts||{};const st=get(pid),now=recKeys(d);
+    opts=opts||{};const st=get(pid),now=recKeys(pid,d);
     if(st.known){
       const q=new Set(st.queue);
       Object.keys(now).forEach(k=>{if(st.known[k]!==now[k]){q.add(k);delete st.tombs[k];}});
@@ -895,7 +1089,7 @@ const Sync=(function(){
     st.known=now;if(opts.resetCursor)st.cursor=null;put(pid,st);
     if(st.session)schedule(pid);
   }
-  function initKnown(pid){const st=get(pid);if(!st.known){st.known=recKeys(readDB(pid));put(pid,st);}}
+  function initKnown(pid){const st=get(pid);if(!st.known){st.known=recKeys(pid,readDB(pid));put(pid,st);}}
   // ---- HTTP ----
   async function http(path,opt,pid){
     opt=opt||{};const h=Object.assign({apikey:APIKEY,'Content-Type':'application/json'},opt.headers||{});
@@ -926,29 +1120,46 @@ const Sync=(function(){
   }
   // ---- merge ----
   function applyRows(pid,rows,initial){
-    const st=get(pid),d=readDB(pid);const q=new Set(st.queue);let changed=0;
-    if(initial){Object.keys(recKeys(d)).forEach(k=>q.add(k));Object.keys(st.tombs).forEach(k=>q.add(k));}
+    const st=get(pid),d=readDB(pid);const q=new Set(st.queue);let changed=0,dbChanged=0;
+    if(initial){Object.keys(recKeys(pid,d)).forEach(k=>q.add(k));Object.keys(st.tombs).forEach(k=>q.add(k));}
     rows.forEach(r=>{
       const k=r.kind+':'+r.id,cts=Date.parse(r.updated_at);if(!isFinite(cts))return;
+      if(r.synced_at&&(!st.cursor||r.synced_at>st.cursor))st.cursor=r.synced_at;
+      if(r.kind==='plan'){
+        const local=readPlanEdit(pid);
+        const lts=local?(+local.editedAt||0):(k in st.tombs?st.tombs[k]:-1);
+        if(cts>lts){
+          if(r.deleted||!r.data||!validPlan(r.data.plan)){if(local){writePlanEdit(pid,null);changed++;}st.tombs[k]=cts;}
+          else{writePlanEdit(pid,{plan:r.data.plan,basedOnUpdated:String(r.data.basedOnUpdated||''),editedAt:cts,coachNote:String(r.data.coachNote||''),changes:Array.isArray(r.data.changes)?r.data.changes:[]});delete st.tombs[k];changed++;}
+          q.delete(k);
+        }else if(cts===lts)q.delete(k);
+        else q.add(k);
+        return;
+      }
       const isS=r.kind==='session';const arr=isS?d.sessions:d.bodyweight;
       const idx=arr.findIndex(x=>isS?x.id===r.id:x.date===r.id);
       const lts=idx>=0?(+arr[idx].updatedAt||0):(k in st.tombs?st.tombs[k]:-1);
       if(cts>lts){
-        if(r.deleted){if(idx>=0){arr.splice(idx,1);changed++;}st.tombs[k]=cts;}
+        if(r.deleted){if(idx>=0){arr.splice(idx,1);dbChanged++;}st.tombs[k]=cts;}
         else{const n=normalise({sessions:isS?[r.data]:[],bodyweight:isS?[]:[r.data]});const rec=(isS?n.sessions:n.bodyweight)[0];
-          if(rec){rec.updatedAt=cts;if(isS)rec.id=r.id;else rec.date=r.id;if(idx>=0)arr[idx]=rec;else arr.push(rec);delete st.tombs[k];changed++;}}
+          if(rec){rec.updatedAt=cts;if(isS)rec.id=r.id;else rec.date=r.id;if(idx>=0)arr[idx]=rec;else arr.push(rec);delete st.tombs[k];dbChanged++;}}
         q.delete(k);
       }else if(cts===lts)q.delete(k);
       else q.add(k);
-      if(r.synced_at&&(!st.cursor||r.synced_at>st.cursor))st.cursor=r.synced_at;
     });
-    st.queue=[...q];st.known=recKeys(d);put(pid,st);
-    if(changed)writeDB(pid,d);
-    return changed;
+    st.queue=[...q];st.known=recKeys(pid,d);put(pid,st);
+    if(dbChanged)writeDB(pid,d);
+    return changed+dbChanged;
   }
   function buildPush(pid){
     const st=get(pid),d=readDB(pid),uidv=st.session.user.id,rows=[];
     st.queue.forEach(k=>{const i=k.indexOf(':'),kind=k.slice(0,i),id=k.slice(i+1);
+      if(kind==='plan'){
+        const pr=planPayload(pid);
+        if(pr&&id==='current')rows.push({user_id:uidv,profile:pid,kind,id,data:pr.data,updated_at:new Date(pr.editedAt).toISOString(),deleted:false,_k:k,_t:pr.editedAt});
+        else if(k in st.tombs)rows.push({user_id:uidv,profile:pid,kind,id,data:{},updated_at:new Date(st.tombs[k]).toISOString(),deleted:true,_k:k,_t:st.tombs[k]});
+        return;
+      }
       const rec=kind==='session'?d.sessions.find(s=>s.id===id):d.bodyweight.find(b=>b.date===id);
       if(rec)rows.push({user_id:uidv,profile:pid,kind,id,data:rec,updated_at:new Date(+rec.updatedAt||0).toISOString(),deleted:false,_k:k,_t:+rec.updatedAt||0});
       else if(k in st.tombs)rows.push({user_id:uidv,profile:pid,kind,id,data:{},updated_at:new Date(st.tombs[k]).toISOString(),deleted:true,_k:k,_t:st.tombs[k]});});
@@ -980,15 +1191,23 @@ const Sync=(function(){
         const changed=applyRows(pid,rows,initial);
         if(changed&&pid===profile.id)refreshViews();
         const push=buildPush(pid);
-        for(let i=0;i<push.length;i+=200){
-          const chunk=push.slice(i,i+200);
-          await rest(pid,'/rest/v1/'+TABLE+'?on_conflict=user_id,profile,kind,id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
-            body:chunk.map(({_k,_t,...r})=>r)});
-          const st=get(pid),d=readDB(pid),now=recKeys(d);
-          st.queue=st.queue.filter(k=>{const c=chunk.find(r=>r._k===k);if(!c)return true;const cur=k in now?now[k]:(k in st.tombs?st.tombs[k]:null);return cur!==c._t;});
-          put(pid,st);
-        }
+        const plans=push.filter(r=>r.kind==='plan'), others=push.filter(r=>r.kind!=='plan');
+        const pushChunks=async list=>{
+          for(let i=0;i<list.length;i+=200){
+            const chunk=list.slice(i,i+200);
+            await rest(pid,'/rest/v1/'+TABLE+'?on_conflict=user_id,profile,kind,id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
+              body:chunk.map(({_k,_t,...r})=>r)});
+            const st=get(pid),d=readDB(pid),now=recKeys(pid,d);
+            st.queue=st.queue.filter(k=>{const c=chunk.find(r=>r._k===k);if(!c)return true;const cur=k in now?now[k]:(k in st.tombs?st.tombs[k]:null);return cur!==c._t;});
+            put(pid,st);
+          }
+        };
+        const kindBlocked=e=>{const blob=JSON.stringify(e&&e.body||{})+' '+(e&&e.message||'');return e&&(e.status===400||e.status===409)&&/proplog_data_kind_chk|23514|check constraint/i.test(blob);};
+        await pushChunks(others);
+        try{await pushChunks(plans);const st=get(pid);st.planBlocked=false;put(pid,st);}
+        catch(e){if(!kindBlocked(e))throw e;const st=get(pid);st.planBlocked=true;st.error='';put(pid,st);}
         const st=get(pid);st.lastSync=Date.now();st.error='';put(pid,st);setStatus(pid,'ok');
+        if(pid===profile.id&&current==='plan')renderPlan();
       }catch(e){
         const st=get(pid);
         if(e instanceof TypeError||!navigator.onLine){setStatus(pid,'offline');}
@@ -1102,6 +1321,7 @@ const Sync=(function(){
 })();
 window.__plSync=Sync;
 function refreshViews(){
+  if(!planEditing){planEdit=readPlanEdit();if(coachPlan||planEdit)useEditedPlan();}
   if(current==='history')renderHistory();if(current==='progress')renderProgressPicker();if(current==='body')renderBody();
   if(current==='data')renderData();if(current==='plan')renderPlan();renderPicker();updateHdr();
 }
@@ -1110,8 +1330,9 @@ function refreshViews(){
 function applyProfile(id){
   profile=PROFILES.find(p=>p.id===id)||PROFILES[0];
   const k=keysFor(profile.id);KEY=k.data;DRAFT_KEY=k.draft;EXPORT_KEY=k.exp;PLAN_KEY=k.plan;SETTINGS_KEY=k.settings;
-  db=load();draft=loadDraft();
-  const c=cachedPlan();plan=c?c.plan:null;planSource=c?'offline':'none';planSavedAt=c?c.savedAt:null;planError='';
+  db=load();draft=loadDraft();planEditing=false;editDraft=null;
+  const c=cachedPlan();coachPlan=c?c.plan:null;planEdit=readPlanEdit();useEditedPlan();
+  planSource=c?'offline':'none';planSavedAt=c?c.savedAt:null;planError='';
 }
 function openProfiles(first){
   const active=localStorage.getItem(ACTIVE_KEY);
@@ -1144,7 +1365,7 @@ applyProfile(PROFILES.some(p=>p.id===savedProfile)?savedProfile:'tom');
 renderPicker();renderLog();updateHdr();loadPlan();Sync.start();
 if(!PROFILES.some(p=>p.id===savedProfile))openProfiles(true);
 if('serviceWorker' in navigator&&location.protocol!=='file:'){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}
-window.__proplog={videoUrl,get db(){return db},sync:Sync,get profile(){return profile.id},get plan(){return plan},get planSource(){return planSource},buildShare};
+window.__proplog={videoUrl,planChanges,get db(){return db},sync:Sync,get profile(){return profile.id},get plan(){return plan},get planEdit(){return planEdit},get coachPlan(){return coachPlan},get planSource(){return planSource},buildShare};
 })();
 </script>
 </body>

@@ -102,6 +102,48 @@ YouTube in a new tab (or the YouTube app on a phone).
 * A `video` also applies in the Log tab to an exercise added by hand with the same name (case-insensitive) as a
   plan exercise that has one.
 
+## Edits from the athlete
+
+The Plan tab has **Edit plan**. The athlete can change exercise name, sets, reps, target kg, rest and notes,
+add, remove and reorder exercises, change a day's title or type, mark a day as rest, and write a free-text
+**Note to my coach**. Save replaces that person's plan inside the app (Plan tab, Start this session, How to
+links) and shows an **Edited by you** tag. **Reset to coach's plan** throws the edits away.
+
+The coach file in this repo is not changed. Edits live on the device at `proplog.planEdit:<profile>` and,
+once `supabase/plan_edits.sql` has been run, sync as one `proplog_data` row:
+
+| column | value |
+|---|---|
+| `kind` | `plan` |
+| `id` | `current` |
+| `profile` | `tom`, `nikki`, `elspeth`, `neil`, `mark`, … |
+| `deleted` | `true` after they reset or choose **Use new plan** |
+| `updated_at` | when they saved (`editedAt`) |
+| `data` | object below |
+
+```jsonc
+{
+  "plan": { },                       // full plan document, same schema as the file
+  "basedOnUpdated": "2026-10-28",    // coach file `updated` the edits were based on
+  "editedAt": 1761680000000,         // ms timestamp
+  "coachNote": "knee sore, swap lunges",
+  "changes": [
+    "Mon: removed Dumbbell walking lunge",
+    "Wed: Barbell deadlift 4x5 -> 3x5",
+    "Note to coach: knee sore, swap lunges"
+  ]
+}
+```
+
+`changes` is computed at save time against the coach plan: removed and added exercises, `sets`x`reps`
+(and target kg) changes, rest, notes, title, type, rest days, reordering, and the coach note.
+Read this row to learn what they changed. When you next publish `plans/<profile>.json`, bump `updated`
+to a later date. The app then shows **Your coach sent a new plan** with **Use new plan** (discards the
+edits) and **Keep my edits**.
+
+Until `plan_edits.sql` widens `proplog_data_kind_chk`, the `plan` row is rejected. The app keeps the
+edit locally and retries. Sessions and bodyweight are unaffected. RLS is unchanged.
+
 ## Placeholder plans
 
 `plans/nikki.json` is a placeholder until her coach bot writes her plan. A placeholder has

@@ -17,7 +17,7 @@ ids = re.findall(r"id:'([a-z0-9_-]+)',name:'([^']+)'", m.group(1)) if m else []
 ok('PROFILES: tom, nikki, elspeth, neil, mark in that order', ids == [('tom', 'Tom'), ('nikki', 'Nikki'), ('elspeth', 'Elspeth'), ('neil', 'Neil'), ('mark', 'Mark')], ids)
 ok('neil id passes the Supabase profile check', re.fullmatch(r'[a-z0-9_-]{1,32}', 'neil') and "profile ~ '^[a-z0-9_-]{1,32}$'" in read('supabase/schema.sql'))
 ok('mum alias still points at elspeth', "PROFILE_ALIAS={mum:'elspeth'}" in html)
-ok('sw: cache bumped to proplog-v10', "const CACHE = 'proplog-v10';" in sw)
+ok('sw: cache bumped to proplog-v11', "const CACHE = 'proplog-v11';" in sw)
 ok('sw: plans/neil.json precached with the others', all(f"'./plans/{p}.json'" in sw for p in ('tom', 'nikki', 'elspeth', 'neil', 'mark')))
 ok('no service key / sb_secret_ in frontend', not re.search(r'service_role|sb_secret_|SUPABASE_SERVICE_KEY', html + sw + read('config.js')))
 ok('email + password sign-in kept', "/auth/v1/token?grant_type=password" in html and 'id="syncPass"' in html)

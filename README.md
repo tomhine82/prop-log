@@ -9,17 +9,18 @@ Live: https://tomhine82.github.io/prop-log/
 | File | What |
 |---|---|
 | `index.html` | The whole app (inline CSS/JS) |
-| `sw.js` | Service worker (`proplog-v10`): app shell cache-first; page, `config.js` and `plans/*.json` network-first |
+| `sw.js` | Service worker (`proplog-v11`): app shell cache-first; page, `config.js` and `plans/*.json` network-first |
 | `withings.html` | Withings OAuth callback – forwards `?code=&state=` to the local helper on 127.0.0.1:8765 |
 | `manifest.json`, `icon*.{svg,png}` | PWA manifest + icons |
 | `plans/tom.json`, `plans/nikki.json`, `plans/elspeth.json`, `plans/neil.json`, `plans/mark.json` | Coach plans – see `PLAN-FORMAT.md` (incl. optional per-exercise `video` links) |
 | `config.js` | Public Supabase config for optional cloud sync (generated) |
 | `supabase/schema.sql` | Table + Row Level Security for cloud sync – paste into the Supabase SQL Editor |
+| `supabase/plan_edits.sql` | Lets plan edits sync: widens `proplog_data_kind_chk` to allow `kind = 'plan'` (RLS unchanged) |
 | `tools/make_config.py` | Generates `config.js` from `SUPABASE_ANON_KEY` |
 | `tools/withings_auth.py`, `tools/withings_sync.py`, `tools/withings_common.py` | Withings body-stats sync (runs on the box, not in the browser) |
 | `tools/set_password.py` | Set/reset a user's password or create the user (admin API, service key) |
 | `supabase/withings.sql` | Optional grant for the sync's service role (only if it reports permission denied) |
-| `tests/` | `test_withings_tools.py` (mocked Withings + Supabase), `test_withings_app.py` (Playwright), `test_set_password.py`, `test_neil_profile.py` (Neil profile, plan + sync scoping; Playwright), `test_mark_profile.py` (Mark profile, plan + sync scoping; Playwright), `test_theme_video.py` (colours, contrast, How-to video links; Playwright) |
+| `tests/` | `test_withings_tools.py` (mocked Withings + Supabase), `test_withings_app.py` (Playwright), `test_set_password.py`, `test_neil_profile.py` (Neil profile, plan + sync scoping; Playwright), `test_mark_profile.py` (Mark profile, plan + sync scoping; Playwright), `test_plan_editor.py` (in-app plan edits, coach banner, sync; Playwright), `test_theme_video.py` (colours, contrast, How-to video links; Playwright) |
 
 ## Look
 
@@ -40,11 +41,17 @@ fully offline. JSON export/import is on the Data tab.
   can't sign in until it's activated. There is no "forgot password" email: reset or create accounts with
   `NEW_PASSWORD=… python3 tools/set_password.py --email you@example.com` (needs `SUPABASE_SERVICE_KEY`; also
   confirms the account). The signed-in account is linked to the active person only. Old magic links still work.
-* Sync: one row per session / bodyweight entry in `public.proplog_data`, last-write-wins by
+* Sync: one row per session / bodyweight entry / edited plan in `public.proplog_data`, last-write-wins by
   `updated_at`, deletes are tombstones (`deleted = true`). Pull on open / return to the app,
   push a moment after every save, offline changes queue and upload when back online.
   The first sign-in merges local and cloud and uploads everything local. Local data is never wiped
   (signing out keeps it; "Delete all data" only clears this device and the cloud copy re-downloads).
+* Plan edits: the Plan tab's **Edit plan** saves that person's plan in `proplog.planEdit:<profile>` and
+  syncs one row `kind = 'plan'`, `id = 'current'`. `data` is `{plan, basedOnUpdated, editedAt, coachNote, changes}`
+  where `changes` is a human-readable diff from the coach file (see `PLAN-FORMAT.md`). The coach file in
+  the repo is not overwritten. Until `supabase/plan_edits.sql` is run, Supabase rejects `kind = 'plan'`
+  (check constraint `proplog_data_kind_chk`); the edit stays on the device, the Plan tab says
+  "Saved on this device", and the upload is retried on the next sync. Sessions and weigh-ins still sync.
 * Status: header pill (☁ 07:53 / ☁ offline / ☁ error) and the Data tab ("Synced 07:53", "Offline · 2 changes waiting", "Not signed in").
 * The publishable/anon key in `config.js` is public by design; RLS limits every user to their own rows.
   Never put the `service_role` / `sb_secret_` key in this repo.

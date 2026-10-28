@@ -16,7 +16,7 @@ m = re.search(r'const PROFILES=(\[.*?\]);', html)
 ids = re.findall(r"id:'([a-z0-9_-]+)',name:'([^']+)'", m.group(1)) if m else []
 ok('PROFILES ends with mark', ids[-1] == ('mark', 'Mark') and ('neil', 'Neil') in ids, ids)
 ok('mark id passes the Supabase profile check', re.fullmatch(r'[a-z0-9_-]{1,32}', 'mark') and "profile ~ '^[a-z0-9_-]{1,32}$'" in read('supabase/schema.sql'))
-ok('sw: cache bumped to proplog-v10', "const CACHE = 'proplog-v10';" in sw)
+ok('sw: cache bumped to proplog-v11', "const CACHE = 'proplog-v11';" in sw)
 ok('sw: plans/mark.json precached with the others', all(f"'./plans/{p}.json'" in sw for p in ('tom', 'nikki', 'elspeth', 'neil', 'mark')))
 ok('picker centres a leftover tile', 'button:last-child:nth-child(odd)' in html and 'justify-self:center' in html)
 

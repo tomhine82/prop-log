@@ -1,7 +1,8 @@
 -- Prop Log – optional cloud sync schema.
 -- Paste into Supabase Dashboard → SQL Editor → Run. Safe to run more than once (idempotent).
 --
--- One row per record per person: kind = 'session' | 'bodyweight', id = session id or bodyweight date.
+-- One row per record per person: kind = 'session' | 'bodyweight' | 'plan',
+-- id = session id, bodyweight date, or 'current' for an in-app plan edit.
 -- Deletes are tombstones (deleted = true) so they sync to other devices.
 -- updated_at = when the record was last changed on a device (last-write-wins key).
 -- synced_at  = server time the row was last written (used for incremental pulls; set by trigger).
@@ -24,7 +25,7 @@ alter table public.proplog_data add column if not exists synced_at timestamptz n
 
 -- Sanity constraints (dropped + re-added so the script stays re-runnable).
 alter table public.proplog_data drop constraint if exists proplog_data_kind_chk;
-alter table public.proplog_data add  constraint proplog_data_kind_chk    check (kind in ('session', 'bodyweight'));
+alter table public.proplog_data add  constraint proplog_data_kind_chk    check (kind in ('session', 'bodyweight', 'plan'));
 alter table public.proplog_data drop constraint if exists proplog_data_profile_chk;
 alter table public.proplog_data add  constraint proplog_data_profile_chk check (profile ~ '^[a-z0-9_-]{1,32}$');
 alter table public.proplog_data drop constraint if exists proplog_data_id_chk;
