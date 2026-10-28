@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "athlete": "Mum",
+  "title": "Gentle gym week: weight loss + mobility",
+  "author": "Mumsy Workout Bot",
+  "updated": "2026-10-28",
+  "notes": "Three short gym sessions a week plus your two aqua aerobics classes. Every gym session is the same shape: 10 min gentle warm-up, a few machines, a short walk in the pool, then 10 min in the jacuzzi. Pick a weight that feels comfortable for every rep, and you should finish each set feeling you could do 3-4 more. When 2 sets of 12 feels easy two sessions in a row, go up one notch on the machine. Move slowly, breathe out as you push, and stop anything that hurts (a bit of effort is fine, pain isn't). Ask a gym instructor to show you how to set up each machine the first time.",
+  "weeks": [
+    {
+      "label": "Every week",
+      "days": [
+        {
+          "day": "Mon",
+          "title": "Gym A",
+          "type": "Other",
+          "focus": "Legs, chest and back on machines",
+          "notes": "About 45 min including the pool and jacuzzi.",
+          "exercises": [
+            { "name": "Recumbent bike", "sets": 1, "reps": "10 min", "targetKg": null, "notes": "Easy pace, you should be able to chat" },
+            { "name": "Leg press", "sets": 2, "reps": "12", "targetKg": null, "rest": "1 min", "notes": "Feet flat, don't lock knees" },
+            { "name": "Seated chest press", "sets": 2, "reps": "12", "targetKg": null, "rest": "1 min" },
+            { "name": "Seated row", "sets": 2, "reps": "12", "targetKg": null, "rest": "1 min", "notes": "Squeeze shoulder blades together" },
+            { "name": "Sit to stand from bench", "sets": 2, "reps": "8", "targetKg": null, "rest": "1 min", "notes": "Stand up from a bench without using hands if you can, sit down slowly" },
+            { "name": "Pool walking", "sets": 1, "reps": "10 min", "targetKg": null, "notes": "Walk forwards, backwards and sideways in the shallow end" },
+            { "name": "Jacuzzi", "sets": 1, "reps": "10 min", "targetKg": null, "notes": "Gently roll shoulders, ankles and neck while you relax" }
+          ]
+        },
+        {
+          "day": "Tue",
+          "title": "Aqua aerobics",
+          "type": "Other",
+          "focus": "Your usual class",
+          "exercises": [
+            { "name": "Aqua aerobics", "sets": 1, "reps": "1 class", "targetKg": null }
+          ]
+        },
+        {
+          "day": "Wed",
+          "title": "Gym B",
+          "type": "Other",
+          "focus": "Legs, shoulders and balance",
+          "notes": "About 45 min including the pool and jacuzzi.",
+          "exercises": [
+            { "name": "Cross trainer or recumbent bike", "sets": 1, "reps": "10 min", "targetKg": null, "notes": "Easy pace" },
+            { "name": "Leg extension", "sets": 2, "reps": "12", "targetKg": null, "rest": "1 min" },
+            { "name": "Seated leg curl", "sets": 2, "reps": "12", "targetKg": null, "rest": "1 min" },
+            { "name": "Lat pulldown", "sets": 2, "reps": "12", "targetKg": null, "rest": "1 min", "notes": "Pull bar to top of chest" },
+            { "name": "Wall press-up", "sets": 2, "reps": "8", "targetKg": null, "rest": "1 min", "notes": "Hands on wall, step feet back a little" },
+            { "name": "Standing side leg raise", "sets": 2, "reps": "10/leg", "targetKg": null, "rest": "1 min", "notes": "Hold a rail or machine for balance" },
+            { "name": "Pool walking", "sets": 1, "reps": "10 min", "targetKg": null },
+            { "name": "Jacuzzi", "sets": 1, "reps": "10 min", "targetKg": null }
+          ]
+        },
+        {
+          "day": "Thu",
+          "title": "Aqua aerobics",
+          "type": "Other",
+          "focus": "Your usual class",
+          "exercises": [
+            { "name": "Aqua aerobics", "sets": 1, "reps": "1 class", "targetKg": null }
+          ]
+        },
+        {
+          "day": "Fri",
+          "title": "Gym C",
+          "type": "Other",
+          "focus": "Walking, legs and upper body",
+          "notes": "About 50 min including the pool and jacuzzi.",
+          "exercises": [
+            { "name": "Treadmill walk", "sets": 1, "reps": "15 min", "targetKg": null, "notes": "Hold the rails if needed, add a slight incline when it feels easy" },
+            { "name": "Leg press", "sets": 2, "reps": "12", "targetKg": null, "rest": "1 min" },
+            { "name": "Seated chest press", "sets": 2, "reps": "12", "targetKg": null, "rest": "1 min" },
+            { "name": "Seated row", "sets": 2, "reps": "12", "targetKg": null, "rest": "1 min" },
+            { "name": "Step-up", "sets": 2, "reps": "6/leg", "targetKg": null, "rest": "1 min", "notes": "Low step, hold a rail" },
+            { "name": "Pool walking", "sets": 1, "reps": "10 min", "targetKg": null },
+            { "name": "Jacuzzi", "sets": 1, "reps": "10 min", "targetKg": null }
+          ]
+        },
+        {
+          "day": "Sat",
+          "title": "Easy walk",
+          "type": "Other",
+          "focus": "Optional, any gentle walk",
+          "exercises": [
+            { "name": "Walk", "sets": 1, "reps": "20 min", "targetKg": null, "notes": "Outdoors or treadmill, easy pace" }
+          ]
+        }
+      ]
+    }
+  ]
+}
