@@ -1,7 +1,7 @@
 # Prop Log
 
-Offline-first workout tracker PWA (static HTML/JS, no build step, no CDN) for Tom, Nikki and Elspeth.
-Profiles are listed in `PROFILES` in `index.html`; `?p=<id>` (e.g. `?p=elspeth`) opens a profile directly. `?p=mum` still opens Elspeth.
+Offline-first workout tracker PWA (static HTML/JS, no build step, no CDN) for Tom, Nikki, Elspeth and Neil.
+Profiles are listed in `PROFILES` in `index.html`; `?p=<id>` (e.g. `?p=elspeth`, `?p=neil`) opens a profile directly. `?p=mum` still opens Elspeth.
 Live: https://tomhine82.github.io/prop-log/
 
 ## Files
@@ -9,17 +9,17 @@ Live: https://tomhine82.github.io/prop-log/
 | File | What |
 |---|---|
 | `index.html` | The whole app (inline CSS/JS) |
-| `sw.js` | Service worker (`proplog-v7`): app shell cache-first; page, `config.js` and `plans/*.json` network-first |
+| `sw.js` | Service worker (`proplog-v8`): app shell cache-first; page, `config.js` and `plans/*.json` network-first |
 | `withings.html` | Withings OAuth callback – forwards `?code=&state=` to the local helper on 127.0.0.1:8765 |
 | `manifest.json`, `icon*.{svg,png}` | PWA manifest + icons |
-| `plans/tom.json`, `plans/nikki.json`, `plans/elspeth.json` | Coach plans – see `PLAN-FORMAT.md` |
+| `plans/tom.json`, `plans/nikki.json`, `plans/elspeth.json`, `plans/neil.json` | Coach plans – see `PLAN-FORMAT.md` |
 | `config.js` | Public Supabase config for optional cloud sync (generated) |
 | `supabase/schema.sql` | Table + Row Level Security for cloud sync – paste into the Supabase SQL Editor |
 | `tools/make_config.py` | Generates `config.js` from `SUPABASE_ANON_KEY` |
 | `tools/withings_auth.py`, `tools/withings_sync.py`, `tools/withings_common.py` | Withings body-stats sync (runs on the box, not in the browser) |
 | `tools/set_password.py` | Set/reset a user's password or create the user (admin API, service key) |
 | `supabase/withings.sql` | Optional grant for the sync's service role (only if it reports permission denied) |
-| `tests/` | `test_withings_tools.py` (mocked Withings + Supabase), `test_withings_app.py` (Playwright), `test_set_password.py` |
+| `tests/` | `test_withings_tools.py` (mocked Withings + Supabase), `test_withings_app.py` (Playwright), `test_set_password.py`, `test_neil_profile.py` (Neil profile, plan + sync scoping; Playwright) |
 
 ## Data
 

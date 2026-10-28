@@ -1,0 +1,332 @@
+{
+  "version": 1,
+  "athlete": "Neil",
+  "title": "3-day full-body strength maintenance",
+  "author": "Neil Workout Bot",
+  "updated": "2026-10-28",
+  "notes": "Goal: maintain strength. Three full-body gym sessions a week (e.g. Mon/Wed/Fri), alternating A-B-A one week and B-A-B the next; keep up the daily dog walks on the other days. Every session: warm-up of 8-10 min static bike (easy, then moderate) plus 1-2 light sets of the first lift; cool-down of 8-10 min easy bike plus 5 min stretching (hips, hamstrings, chest, calves). Rest 90 s-2 min between sets. End each set with about 2 reps in reserve. Progression: when you hit the top of the rep range on all sets with good form, add the smallest weight increment next time. Optional extras: calf raises 2 x 12-15 and single-leg balance 30 s per leg. If a day moves, keep the A/B order and leave at least a day between sessions.",
+  "weeks": [
+    {
+      "label": "Week 1 (A-B-A)",
+      "days": [
+        {
+          "day": "Mon",
+          "title": "Day A",
+          "type": "Other",
+          "focus": "Full body: squat, push, row, hinge, carry, core",
+          "notes": "Warm-up: 8-10 min static bike, easy then moderate, plus 1-2 light sets of the first lift. Cool-down: 8-10 min easy bike, then 5 min stretching (hips, hamstrings, chest, calves). Rest 90 s-2 min between sets. Optional extras if time: calf raises 2 x 12-15, single-leg balance 30 s per leg.",
+          "exercises": [
+            {
+              "name": "Goblet squat or leg press",
+              "sets": 3,
+              "reps": "8-10",
+              "targetKg": null,
+              "rest": "90s-2 min",
+              "notes": "Warm up with 1-2 light sets first"
+            },
+            {
+              "name": "Chest press machine or DB bench press",
+              "sets": 3,
+              "reps": "8-10",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            },
+            {
+              "name": "Seated cable row",
+              "sets": 3,
+              "reps": "10",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            },
+            {
+              "name": "DB Romanian deadlift",
+              "sets": 3,
+              "reps": "8-10",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            },
+            {
+              "name": "Farmer's carry",
+              "sets": 3,
+              "reps": "30m",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            },
+            {
+              "name": "Dead bug",
+              "sets": 3,
+              "reps": "8/side",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            }
+          ]
+        },
+        {
+          "day": "Wed",
+          "title": "Day B",
+          "type": "Other",
+          "focus": "Full body: deadlift, pull, press, single leg, shoulders, core",
+          "notes": "Warm-up: 8-10 min static bike, easy then moderate, plus 1-2 light sets of the first lift. Cool-down: 8-10 min easy bike, then 5 min stretching (hips, hamstrings, chest, calves). Rest 90 s-2 min between sets. Optional extras if time: calf raises 2 x 12-15, single-leg balance 30 s per leg.",
+          "exercises": [
+            {
+              "name": "Trap bar deadlift",
+              "sets": 3,
+              "reps": "6-8",
+              "targetKg": null,
+              "rest": "90s-2 min",
+              "notes": "Warm up with 1-2 light sets first"
+            },
+            {
+              "name": "Lat pulldown",
+              "sets": 3,
+              "reps": "10",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            },
+            {
+              "name": "Seated DB shoulder press",
+              "sets": 3,
+              "reps": "8-10",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            },
+            {
+              "name": "Split squat or step-ups",
+              "sets": 3,
+              "reps": "8/leg",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            },
+            {
+              "name": "Cable face pull",
+              "sets": 3,
+              "reps": "12-15",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            },
+            {
+              "name": "Side plank",
+              "sets": 3,
+              "reps": "20-30s/side",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            }
+          ]
+        },
+        {
+          "day": "Fri",
+          "title": "Day A",
+          "type": "Other",
+          "focus": "Full body: squat, push, row, hinge, carry, core",
+          "notes": "Warm-up: 8-10 min static bike, easy then moderate, plus 1-2 light sets of the first lift. Cool-down: 8-10 min easy bike, then 5 min stretching (hips, hamstrings, chest, calves). Rest 90 s-2 min between sets. Optional extras if time: calf raises 2 x 12-15, single-leg balance 30 s per leg.",
+          "exercises": [
+            {
+              "name": "Goblet squat or leg press",
+              "sets": 3,
+              "reps": "8-10",
+              "targetKg": null,
+              "rest": "90s-2 min",
+              "notes": "Warm up with 1-2 light sets first"
+            },
+            {
+              "name": "Chest press machine or DB bench press",
+              "sets": 3,
+              "reps": "8-10",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            },
+            {
+              "name": "Seated cable row",
+              "sets": 3,
+              "reps": "10",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            },
+            {
+              "name": "DB Romanian deadlift",
+              "sets": 3,
+              "reps": "8-10",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            },
+            {
+              "name": "Farmer's carry",
+              "sets": 3,
+              "reps": "30m",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            },
+            {
+              "name": "Dead bug",
+              "sets": 3,
+              "reps": "8/side",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Week 2 (B-A-B)",
+      "days": [
+        {
+          "day": "Mon",
+          "title": "Day B",
+          "type": "Other",
+          "focus": "Full body: deadlift, pull, press, single leg, shoulders, core",
+          "notes": "Warm-up: 8-10 min static bike, easy then moderate, plus 1-2 light sets of the first lift. Cool-down: 8-10 min easy bike, then 5 min stretching (hips, hamstrings, chest, calves). Rest 90 s-2 min between sets. Optional extras if time: calf raises 2 x 12-15, single-leg balance 30 s per leg.",
+          "exercises": [
+            {
+              "name": "Trap bar deadlift",
+              "sets": 3,
+              "reps": "6-8",
+              "targetKg": null,
+              "rest": "90s-2 min",
+              "notes": "Warm up with 1-2 light sets first"
+            },
+            {
+              "name": "Lat pulldown",
+              "sets": 3,
+              "reps": "10",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            },
+            {
+              "name": "Seated DB shoulder press",
+              "sets": 3,
+              "reps": "8-10",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            },
+            {
+              "name": "Split squat or step-ups",
+              "sets": 3,
+              "reps": "8/leg",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            },
+            {
+              "name": "Cable face pull",
+              "sets": 3,
+              "reps": "12-15",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            },
+            {
+              "name": "Side plank",
+              "sets": 3,
+              "reps": "20-30s/side",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            }
+          ]
+        },
+        {
+          "day": "Wed",
+          "title": "Day A",
+          "type": "Other",
+          "focus": "Full body: squat, push, row, hinge, carry, core",
+          "notes": "Warm-up: 8-10 min static bike, easy then moderate, plus 1-2 light sets of the first lift. Cool-down: 8-10 min easy bike, then 5 min stretching (hips, hamstrings, chest, calves). Rest 90 s-2 min between sets. Optional extras if time: calf raises 2 x 12-15, single-leg balance 30 s per leg.",
+          "exercises": [
+            {
+              "name": "Goblet squat or leg press",
+              "sets": 3,
+              "reps": "8-10",
+              "targetKg": null,
+              "rest": "90s-2 min",
+              "notes": "Warm up with 1-2 light sets first"
+            },
+            {
+              "name": "Chest press machine or DB bench press",
+              "sets": 3,
+              "reps": "8-10",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            },
+            {
+              "name": "Seated cable row",
+              "sets": 3,
+              "reps": "10",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            },
+            {
+              "name": "DB Romanian deadlift",
+              "sets": 3,
+              "reps": "8-10",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            },
+            {
+              "name": "Farmer's carry",
+              "sets": 3,
+              "reps": "30m",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            },
+            {
+              "name": "Dead bug",
+              "sets": 3,
+              "reps": "8/side",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            }
+          ]
+        },
+        {
+          "day": "Fri",
+          "title": "Day B",
+          "type": "Other",
+          "focus": "Full body: deadlift, pull, press, single leg, shoulders, core",
+          "notes": "Warm-up: 8-10 min static bike, easy then moderate, plus 1-2 light sets of the first lift. Cool-down: 8-10 min easy bike, then 5 min stretching (hips, hamstrings, chest, calves). Rest 90 s-2 min between sets. Optional extras if time: calf raises 2 x 12-15, single-leg balance 30 s per leg.",
+          "exercises": [
+            {
+              "name": "Trap bar deadlift",
+              "sets": 3,
+              "reps": "6-8",
+              "targetKg": null,
+              "rest": "90s-2 min",
+              "notes": "Warm up with 1-2 light sets first"
+            },
+            {
+              "name": "Lat pulldown",
+              "sets": 3,
+              "reps": "10",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            },
+            {
+              "name": "Seated DB shoulder press",
+              "sets": 3,
+              "reps": "8-10",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            },
+            {
+              "name": "Split squat or step-ups",
+              "sets": 3,
+              "reps": "8/leg",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            },
+            {
+              "name": "Cable face pull",
+              "sets": 3,
+              "reps": "12-15",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            },
+            {
+              "name": "Side plank",
+              "sets": 3,
+              "reps": "20-30s/side",
+              "targetKg": null,
+              "rest": "90s-2 min"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
