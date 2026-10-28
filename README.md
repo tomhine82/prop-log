@@ -9,17 +9,23 @@ Live: https://tomhine82.github.io/prop-log/
 | File | What |
 |---|---|
 | `index.html` | The whole app (inline CSS/JS) |
-| `sw.js` | Service worker (`proplog-v8`): app shell cache-first; page, `config.js` and `plans/*.json` network-first |
+| `sw.js` | Service worker (`proplog-v9`): app shell cache-first; page, `config.js` and `plans/*.json` network-first |
 | `withings.html` | Withings OAuth callback – forwards `?code=&state=` to the local helper on 127.0.0.1:8765 |
 | `manifest.json`, `icon*.{svg,png}` | PWA manifest + icons |
-| `plans/tom.json`, `plans/nikki.json`, `plans/elspeth.json`, `plans/neil.json` | Coach plans – see `PLAN-FORMAT.md` |
+| `plans/tom.json`, `plans/nikki.json`, `plans/elspeth.json`, `plans/neil.json` | Coach plans – see `PLAN-FORMAT.md` (incl. optional per-exercise `video` links) |
 | `config.js` | Public Supabase config for optional cloud sync (generated) |
 | `supabase/schema.sql` | Table + Row Level Security for cloud sync – paste into the Supabase SQL Editor |
 | `tools/make_config.py` | Generates `config.js` from `SUPABASE_ANON_KEY` |
 | `tools/withings_auth.py`, `tools/withings_sync.py`, `tools/withings_common.py` | Withings body-stats sync (runs on the box, not in the browser) |
 | `tools/set_password.py` | Set/reset a user's password or create the user (admin API, service key) |
 | `supabase/withings.sql` | Optional grant for the sync's service role (only if it reports permission denied) |
-| `tests/` | `test_withings_tools.py` (mocked Withings + Supabase), `test_withings_app.py` (Playwright), `test_set_password.py`, `test_neil_profile.py` (Neil profile, plan + sync scoping; Playwright) |
+| `tests/` | `test_withings_tools.py` (mocked Withings + Supabase), `test_withings_app.py` (Playwright), `test_set_password.py`, `test_neil_profile.py` (Neil profile, plan + sync scoping; Playwright), `test_theme_video.py` (colours, contrast, How-to video links; Playwright) |
+
+## Look
+
+Burnt orange page (`#C25100`) with royal blue cards, header, tab bar and sheets (`#1F3FA8`, inner boxes/inputs `#183590`),
+white text and a light orange accent (`#FFB066`, dark navy `#0B1A4A` text on it). Same in light and dark mode; colours
+are CSS variables at the top of `index.html` (and `withings.html`). Every exercise has a **▶ How to** YouTube link.
 
 ## Data
 

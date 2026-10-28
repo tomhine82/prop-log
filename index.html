@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Prop Log – Workout Tracker</title>
 <meta name="description" content="Offline workout tracker for home-gym strength, conditioning and rugby.">
-<meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#C25100">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,20 +15,18 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
 :root{
-  --bg:#f4f5f7;--card:#ffffff;--card2:#eef0f3;--text:#14171c;--muted:#626b78;--line:#dde1e6;
-  --accent:#1f9d55;--accent-2:#15803d;--accent-ink:#fff;--danger:#d64545;--warn:#d98a00;--blue:#2f6fde;
-  --radius:14px;--tap:48px;--shadow:0 1px 2px rgba(0,0,0,.06),0 4px 14px rgba(0,0,0,.05);
-}
-@media (prefers-color-scheme: dark){
-  :root{--bg:#0f1115;--card:#181b21;--card2:#22262e;--text:#eef1f5;--muted:#9aa3af;--line:#2c313a;
-  --accent:#34c46f;--accent-2:#27a85c;--accent-ink:#06210f;--danger:#ef6161;--warn:#f0a72c;--blue:#6b9bff;
-  --shadow:none;}
+  /* Burnt orange page, royal blue surfaces (same in light and dark mode). Text contrast (WCAG AA):
+     white on --bg 4.7:1 · white on --card 9.0:1 · --muted on --card 6.1:1 · --accent on --card 5.0:1 · --accent-ink on --accent 9.2:1 */
+  --bg:#C25100;--card:#1F3FA8;--card2:#183590;--text:#ffffff;--muted:#C9D4F5;--line:#4F6FD0;--on-bg:#ffffff;
+  --accent:#FFB066;--accent-2:#FFC285;--accent-ink:#0B1A4A;--danger:#FFA3A3;--warn:#FFD166;--blue:#A8C8FF;
+  --radius:14px;--tap:48px;--shadow:0 1px 2px rgba(0,0,0,.12),0 4px 14px rgba(0,0,0,.14);
+  color-scheme:dark;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Helvetica,Arial,sans-serif;
   min-height:100vh;padding-bottom:calc(76px + env(safe-area-inset-bottom));}
-header{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);
+header{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--card2) 94%,transparent);backdrop-filter:blur(10px);
   -webkit-backdrop-filter:blur(10px);padding:calc(10px + env(safe-area-inset-top)) 16px 10px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
 header h1{font-size:20px;margin:0;font-weight:750;letter-spacing:-.01em;flex:1}
 header .sub{font-size:13px;color:var(--muted)}
@@ -122,7 +119,7 @@ input.code{letter-spacing:.3em;text-align:center;font-size:22px;font-weight:700}
 .hdr-prof{flex:none;min-height:36px;padding:0 12px 0 4px;border-radius:999px;border:1px solid var(--line);background:var(--card2);font-weight:700;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .av{width:28px;height:28px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex:none}
 .overlay{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center}
-.sheet{background:var(--bg);width:100%;max-width:560px;border-radius:18px 18px 0 0;padding:16px 14px calc(16px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
+.sheet{background:var(--card2);width:100%;max-width:560px;border-radius:18px 18px 0 0;padding:16px 14px calc(16px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
 .sheet h3{margin:0;font-size:19px;font-weight:750}
 .sheet-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}.sheet-head h3{flex:1}
 .prof-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:14px 0}
@@ -137,7 +134,7 @@ details.day summary::-webkit-details-marker{display:none}
 details.day .body{flex:1;min-width:0}details.day .t{font-weight:700}details.day .s{font-size:13px;color:var(--muted)}
 details.day.today{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 40%,transparent)}
 details.day.today .badge{background:var(--accent);color:var(--accent-ink)}details.day.today .badge small{color:var(--accent-ink)}
-details.day.rest{opacity:.8}
+details.day.rest{background:var(--card2)}
 .day-body{padding:0 12px 12px}
 .pex{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
 .pex .pn{font-weight:650}.pex .pt{white-space:nowrap;font-weight:750}.pex .pnote{font-size:12px;color:var(--muted);margin-top:2px}
@@ -149,6 +146,16 @@ details.day.rest{opacity:.8}
 .plan-hint{font-size:12px;color:var(--blue);font-weight:650;margin:-2px 0 8px}
 .src{font-size:12px;color:var(--muted)}.src.off{color:var(--warn);font-weight:650}
 textarea.share{min-height:250px;margin:12px 0;font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap}
+/* text sitting straight on the orange page */
+.view>p.muted,.view>.empty,.list>.empty,.view>p.small{color:var(--on-bg)}
+.prof-grid button{background:var(--card)}
+input::placeholder,textarea::placeholder{color:#AEBDEB;opacity:1}
+.toast{background:#ffffff;color:var(--accent-ink)}
+/* exercise how-to video links */
+a.vid{flex:none;display:inline-flex;align-items:center;gap:3px;min-height:28px;padding:0 9px;border-radius:999px;font-size:12px;font-weight:750;
+  text-decoration:none;white-space:nowrap;background:var(--accent);color:var(--accent-ink);border:1px solid var(--accent);vertical-align:middle}
+a.vid:active{transform:scale(.97)}
+.pex .pn{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -333,6 +340,12 @@ const FEEL=[['😫','Awful'],['😕','Poor'],['😐','OK'],['🙂','Good'],['�
 
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// How-to videos: a plan exercise's optional "video" (a direct https YouTube link) wins; otherwise a YouTube
+// search for "<name> exercise form", so every exercise (including ones typed in by hand) gets a link.
+const YT_LINK=/^https:\/\/(www\.|m\.|music\.)?(youtube\.com|youtu\.be)\/\S+$/i;
+function videoUrl(name,video){const v=String(video==null?'':video).trim();if(YT_LINK.test(v))return v;
+  return 'https://www.youtube.com/results?search_query='+encodeURIComponent((String(name==null?'':name).trim()+' exercise form').trim());}
+const vidLink=(name,video)=>`<a class="vid" href="${esc(videoUrl(name,video))}" target="_blank" rel="noopener noreferrer" aria-label="How to do ${esc(name)} – YouTube video">▶ How to</a>`;
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const today=()=>{const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)};
 const num=v=>{const n=parseFloat(String(v).replace(',','.'));return isFinite(n)?n:null};
@@ -454,7 +467,7 @@ function renderLog(){
     const pl=e.planned;const repPh=pl&&pl.reps?esc(pl.reps):'reps';const kgPh=pl&&pl.targetKg!=null?esc(pl.targetKg):'kg';
     const hint=pl?`Plan: ${planTarget(pl)}${pl.rest?' · rest '+pl.rest:''}${pl.notes?' · '+pl.notes:''}`:'';
     return `<div class="ex" data-ei="${ei}">
-      <div class="ex-head"><span class="name">${esc(e.name)}</span><button class="x" data-act="delEx" aria-label="Remove exercise">🗑</button></div>
+      <div class="ex-head"><span class="name">${esc(e.name)}</span>${vidLink(e.name,(pl&&pl.video)||planVideoFor(e.name))}<button class="x" data-act="delEx" aria-label="Remove exercise">🗑</button></div>
       ${hint?`<div class="plan-hint">${esc(hint)}</div>`:''}
       <div class="sets"><span class="hd">Set</span><span class="hd">Reps</span><span class="hd">kg</span><span></span>
       ${e.sets.map((s,si)=>`<span class="n">${si+1}</span>
@@ -737,6 +750,9 @@ function planWeek(p,ds){
   const n=Math.round((dateObj(mon)-dateObj(anchor))/(7*864e5));return ws[((n%ws.length)+ws.length)%ws.length];
 }
 function planDayFor(ds){if(!plan||plan.placeholder)return null;const w=planWeek(plan,ds);if(!w)return null;return w.days.find(d=>normDay(d.day)===DAYS[dayIdx(ds)])||null;}
+// A "video" set on any plan exercise with this name (case-insensitive) – used for exercises added by hand.
+function planVideoFor(name){const n=String(name||'').trim().toLowerCase();if(!n||!plan||!Array.isArray(plan.weeks))return '';
+  for(const w of plan.weeks)for(const d of (w&&w.days)||[])for(const e of (d&&d.exercises)||[])if(e&&e.video&&String(e.name||'').trim().toLowerCase()===n&&YT_LINK.test(String(e.video).trim()))return String(e.video).trim();return '';}
 function planTarget(e){return `${e.sets||'?'} × ${e.reps||'?'}${e.targetKg!=null&&e.targetKg!==''?` @ ${fmtKg(+e.targetKg)} kg`:''}`;}
 function renderPlan(){
   const el=$('#planBody');const who=esc(profile.name);
@@ -761,7 +777,7 @@ function renderPlan(){
       <div class="body"><div class="t">${esc(d?d.title||d.type||'Session':'Rest')}${isToday?'<span class="pill acc">Today</span>':''}${done?'<span class="pill ok">✓ Logged</span>':''}</div>
       <div class="s">${esc(d?(d.focus||(exs.length?exs.length+' exercises':'')):'Nothing planned')}</div></div><span class="muted">›</span></summary>
       <div class="day-body">${d&&d.notes?`<div class="day-note">${esc(d.notes)}</div>`:''}
-      ${exs.map(e=>`<div class="pex"><div><div class="pn">${esc(e.name)}</div>${e.rest||e.notes?`<div class="pnote">${esc([e.rest?'Rest '+e.rest:'',e.notes||''].filter(Boolean).join(' · '))}</div>`:''}</div><div class="pt">${esc(planTarget(e))}</div></div>`).join('')}
+      ${exs.map(e=>`<div class="pex"><div><div class="pn"><span>${esc(e.name)}</span>${vidLink(e.name,e.video)}</div>${e.rest||e.notes?`<div class="pnote">${esc([e.rest?'Rest '+e.rest:'',e.notes||''].filter(Boolean).join(' · '))}</div>`:''}</div><div class="pt">${esc(planTarget(e))}</div></div>`).join('')}
       ${d?`<button class="btn ${exs.length?'primary':''} block" data-start="${DAYS[i]}" style="margin-top:8px">▶ ${exs.length?'Start this session':'Log this session'}</button>`:''}</div></details>`;
   }
   el.innerHTML=h;
@@ -773,7 +789,7 @@ function startFromPlan(dayName){
   if(!draft.id&&(draft.exercises.some(e=>e.sets.some(s=>s.reps!=null||s.weight!=null))||(draft.notes||'').trim())&&!confirm('Replace your unsaved session in progress with this planned session?'))return;
   const exs=Array.isArray(d.exercises)?d.exercises:[];
   draft={id:null,date:today(),type:TYPES.includes(d.type)?d.type:'Other',feel:null,rpe:null,notes:'',
-    exercises:exs.map(e=>({name:String(e.name||'Exercise'),planned:{sets:e.sets,reps:e.reps==null?'':String(e.reps),targetKg:e.targetKg==null||e.targetKg===''?null:+e.targetKg,rest:e.rest||'',notes:e.notes||''},
+    exercises:exs.map(e=>({name:String(e.name||'Exercise'),planned:{sets:e.sets,reps:e.reps==null?'':String(e.reps),targetKg:e.targetKg==null||e.targetKg===''?null:+e.targetKg,rest:e.rest||'',notes:e.notes||'',...(e.video?{video:String(e.video)}:{})},
       sets:Array.from({length:Math.min(12,Math.max(1,parseInt(e.sets,10)||1))},()=>({reps:null,weight:null}))})),
     plan:{day:dayName,title:String(d.title||d.type||''),week:String(week.label||''),updated:String(plan.updated||''),exercises:exs.map(e=>String(e.name||'Exercise'))}};
   saveDraft();renderPicker();renderLog();show('log');toast(exs.length?'Plan loaded – just fill in reps & kg':'Session started from plan');
@@ -1127,7 +1143,7 @@ applyProfile(PROFILES.some(p=>p.id===savedProfile)?savedProfile:'tom');
 renderPicker();renderLog();updateHdr();loadPlan();Sync.start();
 if(!PROFILES.some(p=>p.id===savedProfile))openProfiles(true);
 if('serviceWorker' in navigator&&location.protocol!=='file:'){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}
-window.__proplog={get db(){return db},sync:Sync,get profile(){return profile.id},get plan(){return plan},get planSource(){return planSource},buildShare};
+window.__proplog={videoUrl,get db(){return db},sync:Sync,get profile(){return profile.id},get plan(){return plan},get planSource(){return planSource},buildShare};
 })();
 </script>
 </body>

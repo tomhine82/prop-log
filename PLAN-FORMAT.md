@@ -48,7 +48,8 @@ so ADDED/SKIPPED flags in the coach summary are the same on every device.
               "reps": "5",           // STRING: "5", "8-10", "10/leg", "30s", "30m"
               "targetKg": null,      // number or null (unknown / bodyweight)
               "rest": "3 min",       // optional string
-              "notes": "RPE 8"       // optional string
+              "notes": "RPE 8",      // optional string
+              "video": "https://www.youtube.com/watch?v=XXXXXXXXXXX"  // optional – see "How-to videos"
             }
           ]
         }
@@ -84,6 +85,21 @@ Session types: `Lower strength`, `Upper strength`, `Running conditioning`, `Ride
   * `ADDED session (not in plan)` – a session that matches no plan day
   * `MISSED planned sessions:` – past plan days with exercises and nothing logged (only counted from
     the plan's `updated` date onward)
+
+## How-to videos
+
+Every exercise shows a small **▶ How to** link next to its name on the Plan tab and in the Log tab, which opens
+YouTube in a new tab (or the YouTube app on a phone).
+
+* By default the link is a YouTube search built from the exercise name:
+  `https://www.youtube.com/results?search_query=` + URL-encoded `"<name> exercise form"`
+  (e.g. `Seated cable row` → `...?search_query=Seated%20cable%20row%20exercise%20form`). This also works for
+  exercises typed in by hand, which have no plan entry.
+* To point at one specific video, add `"video": "<url>"` to the exercise in the plan. It must be a full `https://`
+  link on `youtube.com` or `youtu.be` (e.g. `https://www.youtube.com/watch?v=…`, `https://youtu.be/…`,
+  `https://www.youtube.com/shorts/…`); anything else is ignored and the search link is used instead.
+* A `video` also applies in the Log tab to an exercise added by hand with the same name (case-insensitive) as a
+  plan exercise that has one.
 
 ## Placeholder plans
 
