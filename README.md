@@ -1,7 +1,7 @@
 # Prop Log
 
-Offline-first workout tracker PWA (static HTML/JS, no build step, no CDN) for Tom, Nikki and Mum.
-Profiles are listed in `PROFILES` in `index.html`; `?p=<id>` (e.g. `?p=mum`) opens a profile directly.
+Offline-first workout tracker PWA (static HTML/JS, no build step, no CDN) for Tom, Nikki and Elspeth.
+Profiles are listed in `PROFILES` in `index.html`; `?p=<id>` (e.g. `?p=elspeth`) opens a profile directly. `?p=mum` still opens Elspeth.
 Live: https://tomhine82.github.io/prop-log/
 
 ## Files
@@ -9,10 +9,10 @@ Live: https://tomhine82.github.io/prop-log/
 | File | What |
 |---|---|
 | `index.html` | The whole app (inline CSS/JS) |
-| `sw.js` | Service worker (`proplog-v6`): app shell cache-first; page, `config.js` and `plans/*.json` network-first |
+| `sw.js` | Service worker (`proplog-v7`): app shell cache-first; page, `config.js` and `plans/*.json` network-first |
 | `withings.html` | Withings OAuth callback – forwards `?code=&state=` to the local helper on 127.0.0.1:8765 |
 | `manifest.json`, `icon*.{svg,png}` | PWA manifest + icons |
-| `plans/tom.json`, `plans/nikki.json`, `plans/mum.json` | Coach plans – see `PLAN-FORMAT.md` |
+| `plans/tom.json`, `plans/nikki.json`, `plans/elspeth.json` | Coach plans – see `PLAN-FORMAT.md` |
 | `config.js` | Public Supabase config for optional cloud sync (generated) |
 | `supabase/schema.sql` | Table + Row Level Security for cloud sync – paste into the Supabase SQL Editor |
 | `tools/make_config.py` | Generates `config.js` from `SUPABASE_ANON_KEY` |
