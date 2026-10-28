@@ -8,6 +8,7 @@ Each person has their own plan file next to `index.html`:
 | Nikki | `plans/nikki.json` |
 | Elspeth | `plans/elspeth.json` |
 | Neil | `plans/neil.json` |
+| Mark | `plans/mark.json` |
 
 The app loads the **active person's** file every time it opens (and when it comes back to the
 foreground after a minute or more). It fetches network-first with `cache: 'no-store'`, so a new

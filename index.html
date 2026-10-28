@@ -123,6 +123,7 @@ input.code{letter-spacing:.3em;text-align:center;font-size:22px;font-weight:700}
 .sheet h3{margin:0;font-size:19px;font-weight:750}
 .sheet-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}.sheet-head h3{flex:1}
 .prof-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:14px 0}
+.prof-grid button:last-child:nth-child(odd){grid-column:1 / -1;width:calc((100% - 10px) / 2);justify-self:center}
 .prof-grid button{min-height:104px;border-radius:14px;border:1px solid var(--line);background:var(--card);font-size:18px;font-weight:750;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--text)}
 .prof-grid button .av{width:46px;height:46px;font-size:20px}
 .prof-grid button small{font-size:12px;color:var(--muted);font-weight:600}
@@ -320,7 +321,7 @@ a.vid:active{transform:scale(.97)}
 'use strict';
 // Per-person storage. Keys are namespaced "<base>:<profileId>". Legacy single-user keys
 // (proplog.v1, proplog.draft.v1, proplog.lastExport) are copied into Tom's profile once.
-const PROFILES=[{id:'tom',name:'Tom',startBw:135},{id:'nikki',name:'Nikki',startBw:null},{id:'elspeth',name:'Elspeth',startBw:null},{id:'neil',name:'Neil',startBw:null}];
+const PROFILES=[{id:'tom',name:'Tom',startBw:135},{id:'nikki',name:'Nikki',startBw:null},{id:'elspeth',name:'Elspeth',startBw:null},{id:'neil',name:'Neil',startBw:null},{id:'mark',name:'Mark',startBw:null}];
 // The profile was live as id "mum" for a few minutes. Old links and a saved selection still mean Elspeth.
 // Only the id is rewritten; leftover proplog.*:mum keys are never read or written.
 const PROFILE_ALIAS={mum:'elspeth'};
@@ -1132,7 +1133,7 @@ $('#profileBtn').addEventListener('click',()=>openProfiles(false));
 $('#dataSwitch').addEventListener('click',()=>openProfiles(false));
 
 // ---------- init ----------
-// ?p=<profile> (e.g. ?p=elspeth, ?p=neil, or the old ?p=mum) opens that person's profile and remembers it.
+// ?p=<profile> (e.g. ?p=elspeth, ?p=neil, ?p=mark, or the old ?p=mum) opens that person's profile and remembers it.
 // Skipped when the hash carries a magic-link token/error – handleRedirect() reads ?p= for those.
 (function profileFromUrl(){try{const u=new URL(location.href),p=canonicalProfile(u.searchParams.get('p'));
   if(!p||/(^|[#&])(access_token|error)/.test(location.hash))return;

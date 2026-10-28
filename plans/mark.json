@@ -1,0 +1,268 @@
+{
+  "version": 1,
+  "athlete": "Mark",
+  "title": "Home gym: get stronger and lose weight",
+  "author": "Mark Workout Bot",
+  "updated": "2026-10-28",
+  "notes": "Late 30s, home gym (barbell and plates, a rack with a cable system, dumbbells, kettlebells). Goals: lose weight and get stronger. Experience is unknown, so pick a weight where the last 2 reps are hard with good form, then progress. On the barbell lifts, when all sets hit the top of the rep range with good form, add 2.5kg (lower body can go up 5kg). Aim for 8-10k steps a day. Fat loss mostly comes from diet: a modest calorie deficit and plenty of protein.",
+  "weeks": [
+    {
+      "label": "Every week",
+      "days": [
+        {
+          "day": "Mon",
+          "title": "Strength A",
+          "type": "Lower strength",
+          "focus": "Squat focus",
+          "notes": "Leave 1-2 reps in reserve on the squat. The last 2 reps of each set should be hard with good form.",
+          "exercises": [
+            {
+              "name": "Barbell back squat",
+              "sets": 4,
+              "reps": "6-8",
+              "targetKg": null,
+              "rest": "2-3 min",
+              "notes": "Leave 1-2 reps in reserve"
+            },
+            {
+              "name": "Dumbbell bench press",
+              "sets": 3,
+              "reps": "8-10",
+              "targetKg": null,
+              "rest": "90s"
+            },
+            {
+              "name": "Cable seated row",
+              "sets": 3,
+              "reps": "10-12",
+              "targetKg": null,
+              "rest": "75s"
+            },
+            {
+              "name": "Dumbbell walking lunge",
+              "sets": 3,
+              "reps": "10/leg",
+              "targetKg": null,
+              "rest": "75s"
+            },
+            {
+              "name": "Cable face pull",
+              "sets": 3,
+              "reps": "15",
+              "targetKg": null,
+              "rest": "45s"
+            },
+            {
+              "name": "Plank",
+              "sets": 3,
+              "reps": "30-45s",
+              "targetKg": null,
+              "rest": "45s",
+              "notes": "Bodyweight"
+            }
+          ]
+        },
+        {
+          "day": "Tue",
+          "title": "Conditioning",
+          "type": "Other",
+          "focus": "Kettlebell circuit",
+          "notes": "About 20-25 min total. Circuit of 5 rounds: go straight to the next exercise, rest 90s after each round. Breathing hard but controlled.",
+          "exercises": [
+            {
+              "name": "Kettlebell swing",
+              "sets": 5,
+              "reps": "15",
+              "targetKg": null,
+              "notes": "Circuit. Go straight to the next exercise"
+            },
+            {
+              "name": "Goblet squat",
+              "sets": 5,
+              "reps": "10",
+              "targetKg": null,
+              "notes": "Circuit. Go straight to the next exercise"
+            },
+            {
+              "name": "Push-up",
+              "sets": 5,
+              "reps": "10",
+              "targetKg": null,
+              "notes": "Bodyweight. Elevate your hands if needed. Go straight to the next exercise"
+            },
+            {
+              "name": "Kettlebell farmer's carry",
+              "sets": 5,
+              "reps": "30m",
+              "targetKg": null,
+              "rest": "90s",
+              "notes": "Rest 90s after each round, then start again"
+            }
+          ]
+        },
+        {
+          "day": "Wed",
+          "title": "Strength B",
+          "type": "Lower strength",
+          "focus": "Deadlift focus",
+          "exercises": [
+            {
+              "name": "Barbell deadlift",
+              "sets": 4,
+              "reps": "5",
+              "targetKg": null,
+              "rest": "2-3 min",
+              "notes": "Flat back, bar close"
+            },
+            {
+              "name": "Barbell overhead press",
+              "sets": 4,
+              "reps": "6-8",
+              "targetKg": null,
+              "rest": "2 min"
+            },
+            {
+              "name": "Cable lat pulldown",
+              "sets": 3,
+              "reps": "10-12",
+              "targetKg": null,
+              "rest": "75s"
+            },
+            {
+              "name": "Dumbbell Romanian deadlift",
+              "sets": 3,
+              "reps": "10",
+              "targetKg": null,
+              "rest": "90s"
+            },
+            {
+              "name": "Cable tricep pushdown",
+              "sets": 3,
+              "reps": "12-15",
+              "targetKg": null,
+              "rest": "45s"
+            },
+            {
+              "name": "Cable woodchop",
+              "sets": 3,
+              "reps": "10/side",
+              "targetKg": null,
+              "rest": "45s"
+            }
+          ]
+        },
+        {
+          "day": "Thu",
+          "title": "Active recovery",
+          "type": "Other",
+          "focus": "Easy walk and mobility",
+          "exercises": [
+            {
+              "name": "Brisk walk",
+              "sets": 1,
+              "reps": "30-45 min",
+              "targetKg": null,
+              "notes": "Easy pace"
+            },
+            {
+              "name": "Mobility",
+              "sets": 1,
+              "reps": "10 min",
+              "targetKg": null,
+              "notes": "Hips and upper back"
+            }
+          ]
+        },
+        {
+          "day": "Fri",
+          "title": "Strength C",
+          "type": "Upper strength",
+          "focus": "Bench focus",
+          "exercises": [
+            {
+              "name": "Barbell bench press",
+              "sets": 4,
+              "reps": "6-8",
+              "targetKg": null,
+              "rest": "2-3 min"
+            },
+            {
+              "name": "Barbell bent-over row",
+              "sets": 4,
+              "reps": "8",
+              "targetKg": null,
+              "rest": "2 min"
+            },
+            {
+              "name": "Bulgarian split squat",
+              "sets": 3,
+              "reps": "8/leg",
+              "targetKg": null,
+              "rest": "90s",
+              "notes": "Dumbbells"
+            },
+            {
+              "name": "Dumbbell lateral raise",
+              "sets": 3,
+              "reps": "12-15",
+              "targetKg": null,
+              "rest": "45s"
+            },
+            {
+              "name": "Dumbbell bicep curl",
+              "sets": 3,
+              "reps": "10-12",
+              "targetKg": null,
+              "rest": "45s"
+            },
+            {
+              "name": "Hanging knee raise or cable crunch",
+              "sets": 3,
+              "reps": "12",
+              "targetKg": null,
+              "rest": "45s"
+            }
+          ]
+        },
+        {
+          "day": "Sat",
+          "title": "Conditioning",
+          "type": "Other",
+          "focus": "Finisher intervals",
+          "exercises": [
+            {
+              "name": "Kettlebell swing",
+              "sets": 10,
+              "reps": "12",
+              "targetKg": null,
+              "notes": "EMOM: 12 swings at the start of every minute for 10 min"
+            },
+            {
+              "name": "Long walk",
+              "sets": 1,
+              "reps": "45-60 min",
+              "targetKg": null,
+              "notes": "Easy pace"
+            }
+          ]
+        },
+        {
+          "day": "Sun",
+          "title": "Rest",
+          "type": "Other",
+          "focus": "Light walk only",
+          "notes": "Light walk only. No lifting.",
+          "exercises": [
+            {
+              "name": "Light walk",
+              "sets": 1,
+              "reps": "easy pace",
+              "targetKg": null,
+              "notes": "Light walk only"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

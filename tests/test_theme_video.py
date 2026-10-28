@@ -31,8 +31,8 @@ ok('all text/background pairs meet WCAG AA 4.5:1', not low, low)
 ok('theme-color meta is the orange', '<meta name="theme-color" content="#C25100">' in html and html.count('name="theme-color"') == 1)
 ok('manifest background_color + theme_color orange', man['background_color'] == '#C25100' and man['theme_color'] == '#C25100', man)
 ok('withings.html uses the same palette', '--bg:#C25100' in wd and '--card:#1F3FA8' in wd and 'prefers-color-scheme' not in wd)
-ok('sw cache proplog-v9', "const CACHE = 'proplog-v9';" in read('sw.js'))
-ok('plan files have no video fields yet (not edited)', all('"video"' not in read(f'plans/{p}.json') for p in ('tom', 'nikki', 'elspeth', 'neil')))
+ok('sw cache proplog-v10', "const CACHE = 'proplog-v10';" in read('sw.js'))
+ok('plan files have no video fields yet (not edited)', all('"video"' not in read(f'plans/{p}.json') for p in ('tom', 'nikki', 'elspeth', 'neil', 'mark')))
 ok('PLAN-FORMAT.md documents the video field', '"video"' in read('PLAN-FORMAT.md') and 'search_query=' in read('PLAN-FORMAT.md'))
 
 # What videoUrl() returns (encodeURIComponent) and what a.href reads back (the browser also escapes ' as %27).
