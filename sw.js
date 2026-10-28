@@ -5,9 +5,9 @@
 //   offline falls back to the last cached copy (marked with an X-Proplog-Cache header).
 // - config.js (cloud sync config): network-first, cached copy offline.
 // - Everything else: cache-first app shell. Supabase API calls are cross-origin and never touched.
-const CACHE = 'proplog-v6';
+const CACHE = 'proplog-v7';
 const ASSETS = ['./', './index.html', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png'];
-const OPTIONAL = ['./config.js', './plans/tom.json', './plans/nikki.json', './plans/mum.json', './withings.html'];
+const OPTIONAL = ['./config.js', './plans/tom.json', './plans/nikki.json', './plans/elspeth.json', './withings.html'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE)
     .then(c => c.addAll(ASSETS).then(() => Promise.all(OPTIONAL.map(p => c.add(new Request(p, { cache: 'no-store' })).catch(() => {})))))

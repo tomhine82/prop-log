@@ -1,5 +1,5 @@
 """Playwright tests for the Withings bits of the app: withings.html redirect, body-composition display,
-cloud pull keeping the extra fields, and the service worker (proplog-v6, withings.html not cached as the app).
+cloud pull keeping the extra fields, and the service worker (proplog-v7, withings.html not cached as the app).
 Needs the site served at http://localhost:8766/prop-log/ (same as test_app_v2.py / test_sync.py)."""
 import json, os, re, sys, time
 from playwright.sync_api import sync_playwright
@@ -97,11 +97,11 @@ with sync_playwright() as p:
     pg.goto(URL); pg.wait_for_function("navigator.serviceWorker.controller!==null||new Promise(r=>navigator.serviceWorker.ready.then(()=>r(true)))", timeout=10000)
     pg.reload(); pg.wait_for_function("navigator.serviceWorker.controller!==null", timeout=10000)
     keys = pg.evaluate("caches.keys()")
-    ok('sw: cache is proplog-v6', keys == ['proplog-v6'], keys)
-    pg.wait_for_function("caches.open('proplog-v6').then(c=>c.match('./withings.html')).then(r=>!!r)", timeout=5000)
+    ok('sw: cache is proplog-v7', keys == ['proplog-v7'], keys)
+    pg.wait_for_function("caches.open('proplog-v7').then(c=>c.match('./withings.html')).then(r=>!!r)", timeout=5000)
     ok('sw: withings.html precached', True)
     pg.goto(BASE + 'withings.html'); pg.wait_for_load_state('networkidle'); pg.wait_for_timeout(500)
-    t = pg.evaluate("caches.open('proplog-v6').then(c=>c.match('./index.html')).then(r=>r.text())")
+    t = pg.evaluate("caches.open('proplog-v7').then(c=>c.match('./index.html')).then(r=>r.text())")
     ok('sw: visiting withings.html does not overwrite the cached app page', 'Prop Log – Workout Tracker' in t and 'Withings connect' not in t)
     ctx.set_offline(True); pg.goto(URL); pg.wait_for_load_state()
     ok('sw: app still opens offline', pg.title().startswith('Prop Log – Workout Tracker'))

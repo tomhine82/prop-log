@@ -313,7 +313,11 @@ textarea.share{min-height:250px;margin:12px 0;font:13px/1.45 ui-monospace,SFMono
 'use strict';
 // Per-person storage. Keys are namespaced "<base>:<profileId>". Legacy single-user keys
 // (proplog.v1, proplog.draft.v1, proplog.lastExport) are copied into Tom's profile once.
-const PROFILES=[{id:'tom',name:'Tom',startBw:135},{id:'nikki',name:'Nikki',startBw:null},{id:'mum',name:'Mum',startBw:null}];
+const PROFILES=[{id:'tom',name:'Tom',startBw:135},{id:'nikki',name:'Nikki',startBw:null},{id:'elspeth',name:'Elspeth',startBw:null}];
+// The profile was live as id "mum" for a few minutes. Old links and a saved selection still mean Elspeth.
+// Only the id is rewritten; leftover proplog.*:mum keys are never read or written.
+const PROFILE_ALIAS={mum:'elspeth'};
+function canonicalProfile(id){const a=PROFILE_ALIAS[id]||id;return PROFILES.some(p=>p.id===a)?a:'';}
 const ACTIVE_KEY='proplog.profile', MIGRATED_KEY='proplog.migrated.v2';
 const keysFor=id=>({data:'proplog.v1:'+id,draft:'proplog.draft.v1:'+id,exp:'proplog.lastExport:'+id,plan:'proplog.plan:'+id,settings:'proplog.settings:'+id});
 let profile=PROFILES[0], KEY, DRAFT_KEY, EXPORT_KEY, PLAN_KEY, SETTINGS_KEY;
@@ -1053,11 +1057,11 @@ const Sync=(function(){
   // Legacy magic-link fallback (old emails / Supabase-generated links): tokens arrive in the URL hash. ?p=<profile> says whose.
   async function handleRedirect(){
     if(!location.hash||location.hash.length<2)return;
-    const h=new URLSearchParams(location.hash.slice(1));const qp=new URLSearchParams(location.search).get('p');
+    const h=new URLSearchParams(location.hash.slice(1));const qp=canonicalProfile(new URLSearchParams(location.search).get('p'));
     const clean=()=>{const u=new URL(location.href);u.hash='';u.searchParams.delete('p');history.replaceState(null,'',u.pathname+u.search);};
     if(h.get('error_description')||h.get('error')){clean();toast('Sign-in link failed: '+(h.get('error_description')||h.get('error')).replace(/\+/g,' '));return;}
     if(!h.get('access_token'))return;
-    const pid=PROFILES.some(p=>p.id===qp)?qp:profile.id;clean();
+    const pid=qp||profile.id;clean();
     try{const tmp=get(pid);tmp.session={access_token:h.get('access_token'),refresh_token:h.get('refresh_token'),expires_at:+h.get('expires_at')||Math.floor(Date.now()/1000)+(+h.get('expires_in')||3600),user:{id:'',email:''}};put(pid,tmp);
       const u=await http('/auth/v1/user',{},pid);
       storeSession(pid,{access_token:tmp.session.access_token,refresh_token:tmp.session.refresh_token,expires_at:tmp.session.expires_at,user:u});
@@ -1112,11 +1116,12 @@ $('#profileBtn').addEventListener('click',()=>openProfiles(false));
 $('#dataSwitch').addEventListener('click',()=>openProfiles(false));
 
 // ---------- init ----------
-// ?p=<profile> (e.g. ?p=mum) opens that person's profile and remembers it on this device.
+// ?p=<profile> (e.g. ?p=elspeth, or the old ?p=mum) opens that person's profile and remembers it.
 // Skipped when the hash carries a magic-link token/error – handleRedirect() reads ?p= for those.
-(function profileFromUrl(){try{const u=new URL(location.href),p=u.searchParams.get('p');
-  if(!p||!PROFILES.some(x=>x.id===p)||/(^|[#&])(access_token|error)/.test(location.hash))return;
+(function profileFromUrl(){try{const u=new URL(location.href),p=canonicalProfile(u.searchParams.get('p'));
+  if(!p||/(^|[#&])(access_token|error)/.test(location.hash))return;
   localStorage.setItem(ACTIVE_KEY,p);u.searchParams.delete('p');history.replaceState(null,'',u.pathname+u.search+u.hash);}catch(e){}})();
+try{const s=localStorage.getItem(ACTIVE_KEY),c=canonicalProfile(s);if(s&&c&&c!==s)localStorage.setItem(ACTIVE_KEY,c);}catch(e){}
 const savedProfile=localStorage.getItem(ACTIVE_KEY);
 applyProfile(PROFILES.some(p=>p.id===savedProfile)?savedProfile:'tom');
 renderPicker();renderLog();updateHdr();loadPlan();Sync.start();
