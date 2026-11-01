@@ -14,7 +14,7 @@ def ok(n, c, extra=''):
 
 html = read('index.html')
 ok('no service key in frontend', not re.search(r'service_role|sb_secret_|SUPABASE_SERVICE_KEY', html + read('sw.js') + read('config.js')))
-ok('sw cache proplog-v12', "const CACHE = 'proplog-v12';" in read('sw.js'))
+ok('sw cache proplog-v13', "const CACHE = 'proplog-v13';" in read('sw.js'))
 
 USER = {'id': 'u-tom', 'email': 'tom@example.com'}
 def sess(exp_in, rt='rt0', at='at0'):

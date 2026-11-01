@@ -1,32 +1,31 @@
-# Prop Log v12 – changes (base: v11, commit 208c7aa)
+# Prop Log v13 – reps that looked entered but weren't saved (base: v12, commit 519422a)
 
-Unzip at the repo root (paths are repo paths). Not pushed.
+Unzip at the repo root (paths are repo paths). Not pushed. No Supabase changes.
+
+## The bug
+Since v9 (theme, 28 Oct 18:13 UTC) an empty reps box showed the plan's reps ("10", "10 each side", "30m") as a
+placeholder in near-white (#AEBDEB, opacity 1) at the same 18px bold as typed numbers, on the blue card. A box
+looked filled in when it was empty. People typed the kg (its placeholder just said "kg") and tapped Save, and only
+the kg was stored, with `reps: null`. Nikki's Wed 28 Oct session was logged at 16:53 UTC, before v9 went live, when
+placeholders were faint grey, and has every rep. Her Fri 30 Oct session (v9–v11) has kg on every set and no reps.
 
 ## Changed files
 | file | change |
 |---|---|
-| `index.html` | **Cardio / timed exercises**: per-exercise mode "Reps & kg" / "⏱ Time & distance" (auto from the name: run, jog, bike/cycle/turbo/assault bike, rower/rowing, ski erg, swim, walk, treadmill, conditioning, sprint, interval…; weights names such as "Dumbbell row", "Seated cable row", "Walking lunge" stay reps & kg); entries of time (mm:ss, h:mm:ss or minutes), km, kcal, avg HR; live total + best pace; last-time placeholders; History line (⏱ km · time · kcal · HR); Progress view for cardio (total km/time, best pace, chart, PBs); share text; plan `type`/`metrics`/`duration`/`distanceKm`; plan editor "Log as" + Duration + Distance km; Start-from-plan opens cardio exercises in cardio mode. Weights exercises and old sessions keep the v11 format. **Staying signed in**: session backups in localStorage `proplog.auth:<profile>` + IndexedDB `proplog-auth` (restored if the main copy is lost), single-flight token refresh, proactive refresh (5 min margin) on focus / visibilitychange / pageshow / online + every 60 s while open, REST 401 → refresh + retry, sign-out only for a real invalid/used/revoked refresh token (never offline/timeouts/429/5xx), backups cleared on sign-out, `navigator.storage.persist()`. |
-| `sw.js` | cache `proplog-v12` |
-| `PLAN-FORMAT.md` | cardio fields (`type`, `metrics`, `duration`, `distanceKm`) and the stored cardio session format |
-| `README.md` | staying signed in (incl. iOS 7-day Safari storage note), cardio, Withings per-profile (Tom + Nikki) |
-| `tools/withings_common.py` | profiles table, per-profile token/state/URL file paths, `profile_for_userid` |
-| `tools/withings_auth.py` | `--profile` (tom default); per-profile URL file; refuses a consent whose Withings user is already linked to another profile (keeps that fresh token for the right profile, exit 5); success page names the person |
-| `tools/withings_sync.py` | syncs every linked profile (or `--profile`), each Withings user → its own profile rows owned by that person's Supabase account; per-profile state; duplicate-link guard (exit 5); one profile failing doesn't stop the others; re-auth hint names the profile |
-| `tests/test_mark_profile.py`, `tests/test_neil_profile.py`, `tests/test_plan_editor.py`, `tests/test_theme_video.py` | expect `proplog-v12` |
-| `tests/test_withings_app.py` | `proplog-v12`; Nikki's Withings rows show on her Body tab via her own sign-in |
-| `tests/test_withings_tools.py` | per-profile auth/sync tests (Nikki link, wrong-person refusal, duplicate guard, per-profile failure); fixed a time-of-day bug (a 06:00 "today" reading was in the future before 6 am) |
+| `index.html` | **Empty boxes look empty**: weights boxes show a generic faint italic "reps" / "kg" placeholder (all set-grid placeholders are faint, light and italic). The plan target stays in the "Plan:" hint. **"✓ Use plan: 10 reps @ 10 kg in empty boxes"** button per planned exercise fills only empty boxes (leading number of the plan reps: "10 each side" → 10, "30m" → 30, "15-20s" → 15; target kg if set). **Save asks** "N sets have kg but no reps (…)", and Cancel goes back with those boxes highlighted. **Capture**: set boxes listen to `input` and `change`, and Save reads every box again before saving, so a value is kept even if no event fired. **Sync merge**: a newer cloud copy never blanks a set value this device has (same exercise and set position). The merged record gets a new `updatedAt` and is re-uploaded. Real changes from the newer copy still win. **Stale edit**: when the saved session changed after an edit was opened, its values are kept in boxes left empty. Test hooks `__proplog.reps`. |
+| `sw.js` | cache `proplog-v13` |
+| `tests/test_auth_session.py`, `test_cardio.py`, `test_mark_profile.py`, `test_neil_profile.py`, `test_plan_editor.py`, `test_theme_video.py`, `test_withings_app.py` | expect `proplog-v13` |
 
 ## New files
 | file | |
 |---|---|
-| `tests/test_cardio.py` | cardio helpers, Log UI, save format, old sessions untouched, History, Progress, sync payload, share, plan editor, start from plan (44 checks) |
-| `tests/test_auth_session.py` | backups + restore (localStorage / IndexedDB), no sign-out on offline/500/503/429/other 400, sign-out on invalid/used token, single-flight, focus/visibility refresh, 401 retry (35 checks) |
+| `tests/test_reps_capture.py` | regression (23 checks): placeholders, kg-without-reps prompt, Use plan, type then Save at once with focus still in the box, Save without input events, Nikki's stored sessions load unchanged, merge never blanks values and re-uploads, stale edit. Fails on v12 and passes on v13. |
 | `CHANGES.md` | this file |
 
 ## Tests
-All 9 files in `tests/` pass: auth_session 35/35, cardio 44/44, mark_profile 30/30, neil_profile 35/35,
-plan_editor 20/20, set_password 12/12, theme_video 34/34, withings_app 27/27, withings_tools 55/55.
+All 10 files in `tests/` pass: auth_session 35/35, cardio 44/44, mark_profile 30/30, neil_profile 35/35, plan_editor 20/20,
+reps_capture 23/23, set_password 12/12, theme_video 34/34, withings_app 27/27, withings_tools 55/55.
 
 ## Notes
-* A device still on v11 that edits and re-saves a v12 cardio session would drop the cardio numbers – update every device (reopen the app twice) before logging cardio.
-* Box: the same three `tools/withings_*.py` were also installed in `/workspace/workout-tracker/tools` (old copies in `/workspace/tools-backup-v11`).
+* Existing data isn't changed. Sessions saved with `reps: null` stay as they are. Nothing in the app back-fills them.
+* "Add exercise" still pre-fills set 1 with last time's real numbers, and "Copy last set" copies real values. Both are visible values, not placeholders.

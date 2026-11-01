@@ -78,6 +78,10 @@ textarea{min-height:84px;resize:vertical}
 .sets.cardio input{font-size:16px;padding:8px 2px}
 .sets.cardio .x{width:34px}
 .sets input.bad{border-color:var(--danger)}
+/* v13: an empty box must never look filled in – faint, light, italic placeholder (v9–v12 showed the plan's reps in near-white bold, which looked typed) */
+.sets input::placeholder{color:color-mix(in srgb,var(--muted) 45%,transparent);font-weight:400;font-style:italic;font-size:14px;opacity:1}
+.sets input.need{border-color:var(--warn,#ffb020);box-shadow:0 0 0 2px color-mix(in srgb,var(--warn,#ffb020) 45%,transparent)}
+.ex-actions .btn.use-plan{flex-basis:100%}.ex-actions{flex-wrap:wrap}
 .cardio-sum{font-size:12px;color:var(--accent);font-weight:700;margin-top:8px}
 .banner{background:color-mix(in srgb,var(--blue) 16%,var(--card));border:1px solid color-mix(in srgb,var(--blue) 40%,var(--line));padding:10px 12px;border-radius:12px;margin-bottom:12px;display:flex;align-items:center;gap:10px;font-size:14px}
 .banner b{flex:1}
@@ -524,6 +528,20 @@ $('#addEx').addEventListener('click',()=>{
   if(lastCard){lastCard.scrollIntoView({block:'center',behavior:'smooth'});}
 });
 
+// v13: plan target -> numbers for the 'Use plan' tap. "10 each side" -> 10, "15-20s each side" -> 15, "30m" -> 30.
+function planFill(pl){if(!pl)return null;const m=String(pl.reps==null?'':pl.reps).match(/^\s*(\d+(?:\.\d+)?)/);
+  const reps=m?+m[1]:null,kg=pl.targetKg!=null&&pl.targetKg!==''&&isFinite(+pl.targetKg)?+pl.targetKg:null;return reps==null&&kg==null?null:{reps,kg};}
+function planFillText(pl){const f=planFill(pl);return [f.reps!=null?f.reps+' reps':'',f.kg!=null?fmtKg(f.kg)+' kg':''].filter(Boolean).join(' @ ');}
+// v13: copy whatever is in the boxes into the draft (belt and braces: 'input' already does this per keystroke)
+function readSetInputs(){document.querySelectorAll('#exList .ex').forEach(card=>{const ex=draft.exercises[+card.dataset.ei];if(!ex)return;
+  card.querySelectorAll('input[data-f][data-si]').forEach(inp=>{const set=ex.sets[+inp.dataset.si];if(!set)return;const f=inp.dataset.f;
+    const v=f==='secs'?parseDur(inp.value):num(inp.value);if(v!=null)set[f]=v;});});}   // only ever adds: clearing a box is handled by its input event
+// v13: fill only the EMPTY values of `into` from `from` (same exercise name, same set position). Returns true if anything was filled.
+const SET_F=['reps','weight','secs','km','kcal','hr'];
+function fillEmptySets(into,from){let n=0;if(!into||!from||!Array.isArray(into.exercises)||!Array.isArray(from.exercises))return false;const used=new Set();
+  into.exercises.forEach(e=>{const j=from.exercises.findIndex((f,k)=>!used.has(k)&&f&&f.name===e.name&&exMode(f)===exMode(e));if(j<0)return;used.add(j);const fe=from.exercises[j];
+    (e.sets||[]).forEach((x,si)=>{const y=fe.sets&&fe.sets[si];if(!x||!y)return;SET_F.forEach(k=>{if(k in x&&x[k]==null&&y[k]!=null){x[k]=y[k];n++;}});});});
+  return n>0;}
 function cardioSumText(sets){const tot=cardioTotals(sets);
   return tot.n&&(tot.n>1||tot.km&&tot.secs)?(tot.n>1?'Total: ':'')+fmtTotals(tot)+(tot.best?' · best '+fmtDur(tot.best)+'/km':''):'';}
 function renderLog(){
@@ -556,7 +574,7 @@ function renderLog(){
       ${e.sets.map((x,si)=>`<span class="n">${si+1}</span>${ms.map(m=>inp(m,x,si)).join('')}<button class="x" data-act="delSet" data-si="${si}" aria-label="Remove entry">×</button>`).join('')}
       </div><div class="cardio-sum"${sum?'':' hidden'}>${esc(sum)}</div>`;
     }else{
-      const repPh=pl&&pl.reps?esc(pl.reps):'reps';const kgPh=pl&&pl.targetKg!=null?esc(pl.targetKg):'kg';
+      const repPh='reps',kgPh='kg';   // v13: the plan target is in the hint line and the 'Use plan' button, never in the box
       grid=`<div class="sets"><span class="hd">Set</span><span class="hd">Reps</span><span class="hd">kg</span><span></span>
       ${e.sets.map((s,si)=>`<span class="n">${si+1}</span>
         <input type="number" inputmode="numeric" min="0" step="1" placeholder="${repPh}" data-si="${si}" data-f="reps" value="${s.reps??''}" aria-label="Set ${si+1} reps">
@@ -568,15 +586,17 @@ function renderLog(){
       <div class="ex-head"><span class="name">${esc(e.name)}</span>${vidLink(e.name,(pl&&pl.video)||planVideoFor(e.name))}<button class="x" data-act="delEx" aria-label="Remove exercise">🗑</button></div>
       ${hint?`<div class="plan-hint">${esc(hint)}</div>`:''}
       ${sw}${grid}
-      <div class="ex-actions"><button class="btn small" data-act="addSet">＋ ${mode==='cardio'?'Entry':'Set'}</button><button class="btn small" data-act="copySet">⧉ Copy last ${mode==='cardio'?'entry':'set'}</button></div>
+      <div class="ex-actions">${mode==='strength'&&planFill(pl)&&e.sets.some(x=>x.reps==null||(x.weight==null&&planFill(pl).kg!=null))?`<button class="btn small use-plan" data-act="usePlan">✓ Use plan: ${esc(planFillText(pl))} in empty boxes</button>`:''}<button class="btn small" data-act="addSet">＋ ${mode==='cardio'?'Entry':'Set'}</button><button class="btn small" data-act="copySet">⧉ Copy last ${mode==='cardio'?'entry':'set'}</button></div>
       ${lastTxt?`<div class="ex-meta">${esc(lastTxt)}</div>`:''}
     </div>`;}).join('');
 }
-$('#exList').addEventListener('input',ev=>{
-  const inp=ev.target;if(!inp.dataset.f)return;const ei=+inp.closest('.ex').dataset.ei;const f=inp.dataset.f;
+function onSetInput(ev){
+  const inp=ev.target;if(!inp.dataset.f||inp.dataset.si==null)return;inp.classList.remove('need');const ei=+inp.closest('.ex').dataset.ei;const f=inp.dataset.f;
   const ex=draft.exercises[ei];ex.sets[+inp.dataset.si][f]=f==='secs'?parseDur(inp.value):num(inp.value);saveDraft();
   if(exMode(ex)==='cardio'){const el=inp.closest('.ex').querySelector('.cardio-sum');if(el){const t=cardioSumText(ex.sets);el.textContent=t;el.hidden=!t;}}
-});
+}
+$('#exList').addEventListener('input',onSetInput);
+$('#exList').addEventListener('change',onSetInput);   // v13: some iOS keyboards/autofill only fire change
 // Tidy a typed time ("25" -> "25:00") when the field is left; unreadable input is flagged, not discarded.
 $('#exList').addEventListener('change',ev=>{const inp=ev.target;if(inp.dataset.f!=='secs')return;const v=parseDur(inp.value);
   if(v)inp.value=fmtDur(v);inp.classList.toggle('bad',!!inp.value.trim()&&!v);if(inp.value.trim()&&!v)toast('Time: use mm:ss or minutes');});
@@ -588,6 +608,7 @@ $('#exList').addEventListener('click',ev=>{
     ex.mode=to;ex.sets=Array.from({length:Math.max(1,ex.sets.length)},()=>blankSet(to));}
   if(act==='delEx'){if(ex.sets.some(s=>setHas(mode,s))&&!confirm(`Remove ${ex.name}?`))return;draft.exercises.splice(ei,1);}
   if(act==='delSet'){ex.sets.splice(+b.dataset.si,1);if(!ex.sets.length)ex.sets.push(blankSet(mode));}
+  if(act==='usePlan'){readSetInputs();const f=planFill(ex.planned);if(f)ex.sets.forEach(x=>{if(x.reps==null&&f.reps!=null)x.reps=f.reps;if(x.weight==null&&f.kg!=null)x.weight=f.kg;});}
   if(act==='addSet'){ex.sets.push(blankSet(mode));}
   if(act==='copySet'){const l=ex.sets[ex.sets.length-1]||blankSet(mode);ex.sets.push(mode==='cardio'?normCardioSet(l):{reps:l.reps,weight:l.weight});}
   saveDraft();renderLog();
@@ -600,12 +621,20 @@ $('#sRpe').addEventListener('change',e=>{draft.rpe=e.target.value?+e.target.valu
 $('#sNotes').addEventListener('input',e=>{draft.notes=e.target.value;saveDraft();});
 
 $('#saveSession').addEventListener('click',()=>{
+  readSetInputs();saveDraft();
+  const noReps=[];draft.exercises.forEach((e,ei)=>{if(exMode(e)!=='strength')return;e.sets.forEach((x,si)=>{if(x.weight!=null&&x.reps==null)noReps.push([ei,si]);});});
+  if(noReps.length){const names=[...new Set(noReps.map(([ei])=>draft.exercises[ei].name))];
+    if(!confirm(`${noReps.length} set${noReps.length>1?'s have':' has'} kg but no reps (${names.join(', ')}).\n\nOK = save anyway · Cancel = go back and type the reps`)){
+      renderLog();noReps.forEach(([ei,si])=>{const i=document.querySelector(`.ex[data-ei="${ei}"] input[data-si="${si}"][data-f=reps]`);if(i)i.classList.add('need');});
+      const f=document.querySelector('#exList input.need');if(f){f.scrollIntoView({block:'center'});f.focus();}return;}}
   const exercises=draft.exercises.map(e=>{const mode=exMode(e);
     return normEx({name:e.name,mode,metrics:e.metrics||(e.planned&&e.planned.metrics),sets:e.sets.filter(x=>setHas(mode,x))});});
   if(!exercises.length&&!draft.notes.trim()&&!draft.feel&&!confirm('Save an empty session?'))return;
   const now=Date.now();
   if(draft.id){const i=db.sessions.findIndex(s=>s.id===draft.id);
     const rec={...db.sessions[i],date:draft.date,type:draft.type,exercises,feel:draft.feel,rpe:draft.rpe,notes:draft.notes,updatedAt:now};
+    // v13: the saved copy changed since this edit was opened (e.g. a sync brought newer numbers) – keep its values in boxes left empty here
+    if(i>=0&&draft.baseUpdatedAt!=null&&(+db.sessions[i].updatedAt||0)>draft.baseUpdatedAt)fillEmptySets(rec,db.sessions[i]);
     if(draft.plan)rec.plan=draft.plan;else delete rec.plan;
     if(i>=0)db.sessions[i]=rec;else db.sessions.push(rec);}
   else db.sessions.push({id:uid(),date:draft.date,type:draft.type,exercises,feel:draft.feel,rpe:draft.rpe,notes:draft.notes,createdAt:now,updatedAt:now,...(draft.plan?{plan:draft.plan}:{})});
@@ -650,7 +679,7 @@ $('#histFilter').addEventListener('change',renderHistory);
 $('#histList').addEventListener('click',ev=>{
   const li=ev.target.closest('.item');if(!li)return;const s=db.sessions.find(x=>x.id===li.dataset.id);if(!s)return;
   if(!draft.id&&(draft.exercises.length||draft.notes)&&!confirm('Discard your unsaved session in progress and open this one?'))return;
-  draft=JSON.parse(JSON.stringify({id:s.id,date:s.date,type:s.type,exercises:s.exercises,feel:s.feel,rpe:s.rpe,notes:s.notes,...(s.plan?{plan:s.plan}:{})}));
+  draft=JSON.parse(JSON.stringify({id:s.id,date:s.date,type:s.type,exercises:s.exercises,feel:s.feel,rpe:s.rpe,notes:s.notes,baseUpdatedAt:+s.updatedAt||0,...(s.plan?{plan:s.plan}:{})}));
   draft.exercises.forEach(e=>{e.mode=exMode(e);if(!e.sets.length)e.sets.push(blankSet(e.mode));});
   saveDraft();renderLog();show('log');
 });
@@ -1343,7 +1372,11 @@ const Sync=(function(){
       if(cts>lts){
         if(r.deleted){if(idx>=0){arr.splice(idx,1);dbChanged++;}st.tombs[k]=cts;}
         else{const n=normalise({sessions:isS?[r.data]:[],bodyweight:isS?[]:[r.data]});const rec=(isS?n.sessions:n.bodyweight)[0];
-          if(rec){rec.updatedAt=cts;if(isS)rec.id=r.id;else rec.date=r.id;if(idx>=0)arr[idx]=rec;else arr.push(rec);delete st.tombs[k];dbChanged++;}}
+          if(rec){rec.updatedAt=cts;if(isS)rec.id=r.id;else rec.date=r.id;
+            // v13: a newer copy never blanks numbers this device has (e.g. an older/partial copy saved elsewhere) –
+            // keep ours in the empty boxes, then re-upload the merged record so every device ends up with the full set.
+            let keep=false;if(isS&&idx>=0&&fillEmptySets(rec,arr[idx])){rec.updatedAt=Math.max(Date.now(),cts+1);keep=true;}
+            if(idx>=0)arr[idx]=rec;else arr.push(rec);delete st.tombs[k];dbChanged++;if(keep){q.add(k);return;}}}
         q.delete(k);
       }else if(cts===lts)q.delete(k);
       else q.add(k);
@@ -1576,7 +1609,7 @@ applyProfile(PROFILES.some(p=>p.id===savedProfile)?savedProfile:'tom');
 renderPicker();renderLog();updateHdr();loadPlan();Sync.start();
 if(!PROFILES.some(p=>p.id===savedProfile))openProfiles(true);
 if('serviceWorker' in navigator&&location.protocol!=='file:'){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}
-window.__proplog={videoUrl,planChanges,cardio:{autoMode,planExMode,exMode,parseDur,fmtDur,normEx,cardioTotals,fmtCardioSet,normMetrics},get db(){return db},sync:Sync,get profile(){return profile.id},get plan(){return plan},get planEdit(){return planEdit},get coachPlan(){return coachPlan},get planSource(){return planSource},buildShare};
+window.__proplog={videoUrl,reps:{planFill,fillEmptySets,readSetInputs},planChanges,cardio:{autoMode,planExMode,exMode,parseDur,fmtDur,normEx,cardioTotals,fmtCardioSet,normMetrics},get db(){return db},sync:Sync,get profile(){return profile.id},get plan(){return plan},get planEdit(){return planEdit},get coachPlan(){return coachPlan},get planSource(){return planSource},buildShare};
 })();
 </script>
 </body>

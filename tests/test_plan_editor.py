@@ -11,7 +11,7 @@ def ok(n, c, extra=''):
 read = lambda p: open(os.path.join(ROOT, p), encoding='utf-8').read()
 
 html, sw, sql = read('index.html'), read('sw.js'), read('supabase/plan_edits.sql')
-ok('sw cache proplog-v12', "const CACHE = 'proplog-v12';" in sw)
+ok('sw cache proplog-v13', "const CACHE = 'proplog-v13';" in sw)
 ok('plan edits stored per profile', "planEdit:'proplog.planEdit:'+id" in html)
 ok('no service key in the frontend', not re.search(r'service_role|sb_secret_|SUPABASE_SERVICE_KEY', html + sw + read('config.js')))
 ok('plan_edits.sql widens the kind check and leaves RLS alone',
