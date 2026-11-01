@@ -2,6 +2,11 @@
 
 Secrets come only from the environment: WITHINGS_CLIENT_ID, WITHINGS_CLIENT_SECRET, SUPABASE_SERVICE_KEY.
 Token/state files live in $PROPLOG_HOME (default /home/box/.proplog, dir 700, files 600).
+
+One Withings user per Prop Log profile (the Withings API authorises each Withings user separately, so each
+needs its own consent). Profile 'tom' keeps the original file names; other profiles get a suffix:
+    tom   -> withings_tokens.json        withings_state.json        withings_authorize_url.txt
+    nikki -> withings_tokens.nikki.json  withings_state.nikki.json  withings_authorize_url.nikki.txt
 Endpoints can be overridden for tests with WITHINGS_API_BASE / WITHINGS_ACCOUNT_BASE / SUPABASE_URL.
 """
 import json, os, tempfile, time, urllib.error, urllib.parse, urllib.request
@@ -12,7 +17,55 @@ STATE = os.path.join(HOME, 'withings_state.json')
 API = os.environ.get('WITHINGS_API_BASE', 'https://wbsapi.withings.net').rstrip('/')
 ACCOUNT = os.environ.get('WITHINGS_ACCOUNT_BASE', 'https://account.withings.com').rstrip('/')
 REDIRECT_URI = os.environ.get('WITHINGS_REDIRECT_URI', 'https://tomhine82.github.io/prop-log/withings.html')
-UA = 'prop-log-withings/1.0'
+UA = 'prop-log-withings/1.1'
+
+# Prop Log profiles (PROFILES in index.html). 'email' is the profile's Supabase login when known; when it is
+# blank the sync takes the user_id that already owns that profile's rows in proplog_data.
+PROFILES = {
+    'tom':     {'name': 'Tom',     'email': 'tomhine82@btinternet.com'},
+    'nikki':   {'name': 'Nikki',   'email': ''},
+    'elspeth': {'name': 'Elspeth', 'email': ''},
+    'neil':    {'name': 'Neil',    'email': ''},
+    'mark':    {'name': 'Mark',    'email': ''},
+}
+DEFAULT_PROFILE = 'tom'
+
+
+def check_profile(p):
+    p = (p or '').strip().lower()
+    if p not in PROFILES:
+        raise Fail(f'Unknown profile {p!r} (choose from: {", ".join(PROFILES)})', 2)
+    return p
+
+
+def _suffixed(base, profile):
+    if profile == DEFAULT_PROFILE:
+        return base
+    root, ext = os.path.splitext(base)
+    return f'{root}.{profile}{ext}'
+
+
+def token_path(profile): return _suffixed(TOKENS, profile)
+def state_path(profile): return _suffixed(STATE, profile)
+def url_path(profile): return _suffixed(os.path.join(HOME, 'withings_authorize_url.txt'), profile)
+
+
+def linked_profiles():
+    """Profiles that have a Withings token file, in PROFILES order."""
+    return [p for p in PROFILES if os.path.exists(token_path(p))]
+
+
+def profile_for_userid(userid, exclude=None):
+    """Which other profile's token belongs to this Withings user id (or None)."""
+    if not userid:
+        return None
+    for p in linked_profiles():
+        if p == exclude:
+            continue
+        t = read_json(token_path(p)) or {}
+        if str(t.get('userid') or '') == str(userid):
+            return p
+    return None
 
 
 class Fail(Exception):

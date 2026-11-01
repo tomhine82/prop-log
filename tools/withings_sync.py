@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
-"""Sync Tom's Withings body stats into Prop Log (Supabase public.proplog_data, kind 'bodyweight').
+"""Sync Withings body stats into Prop Log (Supabase public.proplog_data, kind 'bodyweight').
 
     python3 tools/withings_sync.py --dry-run     # show what would change (no Supabase writes, no state change)
-    python3 tools/withings_sync.py               # sync since last run (first run: last 365 days)
+    python3 tools/withings_sync.py               # every linked profile, since last run (first run: last 365 days)
+    python3 tools/withings_sync.py --profile tom # just one profile
     python3 tools/withings_sync.py --full        # ignore state, re-pull the last --days days (default 365)
+
+Each Prop Log profile with a Withings token (tools/withings_auth.py --profile <p>) is synced from ITS Withings user
+into rows with profile=<p>, owned by that profile's Supabase user (tom: the account for EMAIL; others: the user_id
+that already owns the profile's rows, or --user-id). Two profiles pointing at the same Withings user is refused.
 
 Env: WITHINGS_CLIENT_ID, WITHINGS_CLIENT_SECRET, SUPABASE_SERVICE_KEY (legacy service_role JWT or sb_secret_…),
 optional SUPABASE_URL, PROPLOG_USER_ID, PROPLOG_TZ (default Europe/London), PROPLOG_HOME.
-Files: $PROPLOG_HOME/withings_tokens.json (from withings_auth.py), withings_state.json (cursor + cached user_id).
+Files: $PROPLOG_HOME/withings_tokens[.<profile>].json (from withings_auth.py), withings_state[.<profile>].json
+(cursor + cached user_id). Profile tom uses the un-suffixed names.
 
 One row per day: id = YYYY-MM-DD, data = {id,date,kg,updatedAt, fat_pct,fat_kg,muscle_kg,hydration_kg,bone_kg,
 source:'withings', measured_at}. For each measure type the latest value of the day wins. updated_at is the time of
@@ -15,6 +21,7 @@ the latest Withings measurement of that day, so the app's newest-wins merge appl
 deleted in the app after that weigh-in is left alone.
 
 Exit codes: 0 ok · 1 error · 2 config missing · 3 Withings re-auth needed · 4 Supabase rejected the request.
+With several profiles every profile is attempted; the exit code is the first failure's.
 No secrets or tokens are ever printed.
 """
 import argparse, base64, datetime as dt, fcntl, json, math, os, sys, time, urllib.parse
@@ -35,22 +42,31 @@ def log(*a): print(*a, flush=True)
 
 
 # ---------------- Withings ----------------
+def auth_cmd(profile):
+    return 'python3 tools/withings_auth.py' + ('' if profile == wc.DEFAULT_PROFILE else f' --profile {profile}')
+
+
 class Withings:
-    def __init__(self):
+    def __init__(self, profile=wc.DEFAULT_PROFILE):
         wc.env('WITHINGS_CLIENT_ID'); wc.env('WITHINGS_CLIENT_SECRET')
-        self.tok = wc.read_json(wc.TOKENS)
+        self.profile = profile; self.path = wc.token_path(profile)
+        self.tok = wc.read_json(self.path)
         if not self.tok or not self.tok.get('refresh_token'):
-            raise wc.Fail(f'No Withings tokens at {wc.TOKENS}. Run: python3 tools/withings_auth.py', 3)
+            raise wc.Fail(f'No Withings tokens at {self.path}. Run: {auth_cmd(profile)}', 3)
         self.refreshed = False
+
+    @property
+    def userid(self): return str(self.tok.get('userid') or '')
 
     def refresh(self):
         try:
             new = wc.withings_token_request({'grant_type': 'refresh_token', 'refresh_token': self.tok['refresh_token']})
         except wc.Fail as e:
             raise wc.Fail(f'{e}. The Withings refresh token is expired or revoked – re-auth needed: '
-                          'python3 tools/withings_auth.py', 3)
+                          f'{auth_cmd(self.profile)}', 3)
         new['userid'] = new.get('userid') or self.tok.get('userid', '')
-        wc.write_json_atomic(wc.TOKENS, new)   # persist the rotated refresh token before anything else
+        new['profile'] = self.profile
+        wc.write_json_atomic(self.path, new)   # persist the rotated refresh token before anything else
         self.tok = new; self.refreshed = True
 
     def token(self):
@@ -70,7 +86,7 @@ class Withings:
                 if st == 401 or status == 401:
                     if attempt == 0:
                         self.refresh(); continue
-                    raise wc.Fail('Withings rejected the access token even after refresh – re-auth needed: python3 tools/withings_auth.py', 3)
+                    raise wc.Fail(f'Withings rejected the access token even after refresh – re-auth needed: {auth_cmd(self.profile)}', 3)
                 break
             if status != 200 or st != 0 or not isinstance(j.get('body'), dict):
                 raise wc.Fail(f'Withings getmeas failed (HTTP {status}, status {st}: {j.get("error") if isinstance(j, dict) else ""})', 1)
@@ -228,29 +244,52 @@ def main(argv=None):
     ap.add_argument('--dry-run', action='store_true', help='print a summary, write nothing to Supabase or the state file')
     ap.add_argument('--full', action='store_true', help='ignore the saved cursor and re-pull the last --days days')
     ap.add_argument('--days', type=int, default=365, help='history window for the first/full run (default 365)')
-    ap.add_argument('--profile', default='tom')
-    ap.add_argument('--email', default=EMAIL)
-    ap.add_argument('--user-id', default=os.environ.get('PROPLOG_USER_ID', ''))
+    ap.add_argument('--profile', default='', help='only this Prop Log profile (default: every profile with a Withings token)')
+    ap.add_argument('--email', default='', help='Supabase login of the profile owner (default: built-in for tom)')
+    ap.add_argument('--user-id', default='', help='Supabase user id owning the rows (needs --profile; env PROPLOG_USER_ID applies to tom)')
     a = ap.parse_args(argv)
     try:
         wc.ensure_home()
+        if a.profile:
+            profiles = [wc.check_profile(a.profile)]
+        else:
+            profiles = wc.linked_profiles()
+            if not profiles:
+                raise wc.Fail(f'No Withings tokens at {wc.TOKENS}. Run: python3 tools/withings_auth.py', 3)
+            if a.user_id or a.email:
+                raise wc.Fail('--user-id/--email need --profile', 2)
         lockf = open(os.path.join(wc.HOME, '.withings_sync.lock'), 'w')
         try: fcntl.flock(lockf, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError: raise wc.Fail('Another withings_sync.py is already running', 1)
-        return run(a)
     except wc.Fail as e:
         print('ERROR: ' + str(e), file=sys.stderr); return e.code
+    rc = 0
+    for p in profiles:
+        if len(profiles) > 1: log(f'== profile {p} ==')
+        try:
+            run(a, p)
+        except wc.Fail as e:
+            print(f'ERROR ({p}): ' + str(e) if len(profiles) > 1 else 'ERROR: ' + str(e), file=sys.stderr, flush=True)
+            rc = rc or e.code
+    return rc
 
 
-def run(a):
+def run(a, profile=wc.DEFAULT_PROFILE):
     tz = ZoneInfo(os.environ.get('PROPLOG_TZ', 'Europe/London'))
-    state = wc.read_json(wc.STATE, {}) or {}
+    state_file = wc.state_path(profile)
+    state = wc.read_json(state_file, {}) or {}
     started = int(time.time())
+    email = (a.email or wc.PROFILES[profile]['email'] or '').strip().lower()
+    want_uid = a.user_id or (os.environ.get('PROPLOG_USER_ID', '') if profile == wc.DEFAULT_PROFILE else '')
     key = os.environ.get('SUPABASE_SERVICE_KEY', '').strip()
     if not key and not a.dry_run:
         raise wc.Fail('SUPABASE_SERVICE_KEY is not set (needed to write to Supabase; --dry-run works without it)', 2)
     supa = Supa(key) if key else None
-    w = Withings()
+    w = Withings(profile)
+    other = wc.profile_for_userid(w.userid, exclude=profile)
+    if other and list(wc.PROFILES).index(other) < list(wc.PROFILES).index(profile):
+        raise wc.Fail(f'Withings user {w.userid} is linked to both {other} and {profile}; refusing to copy {other}\'s '
+                      f'readings into {profile}. Re-run {auth_cmd(profile)} and pick {wc.PROFILES[profile]["name"]}.', 5)
 
     # 1) Which days changed?
     cursor = None if a.full else state.get('lastupdate')
@@ -266,30 +305,33 @@ def run(a):
         groups, meta = w.getmeas(startdate=started - a.days * 86400, enddate=started)
         mode = f'full, last {a.days} days'
     recs = day_records(groups, tz)
-    log(f'Withings: {len(groups)} measure group(s), {len(recs)} day(s) with a weight ({mode})'
+    log(f'Withings user {w.userid or "?"} -> profile {profile}: {len(groups)} measure group(s), {len(recs)} day(s) with a weight ({mode})'
         + (' · access token refreshed' if w.refreshed else ''))
     if recs:
         log(f'  dates: {fmt_days(recs)}')
         last = recs[max(recs)]['vals']
         log('  latest ' + max(recs) + ': ' + ', '.join(f'{f} {last[f]}' for f in FIELDS if f in last))
 
-    # 2) Who is Tom in Supabase?
+    # 2) Who owns this profile in Supabase?
     user_id = None
     if supa:
-        user_id = a.user_id or (state.get('user_id') if state.get('user_email') == a.email.lower() else None)
+        user_id = want_uid or (state.get('user_id') if state.get('user_email', '') == email else None)
         if not user_id:
-            try:
-                user_id = supa.find_user(a.email)
-            except wc.Fail as e:
-                log(f'  auth admin lookup failed ({e}); trying existing rows')
-            user_id = user_id or supa.user_from_rows(a.profile)
+            if email:
+                try:
+                    user_id = supa.find_user(email)
+                except wc.Fail as e:
+                    log(f'  auth admin lookup failed ({e}); trying existing rows')
+            user_id = user_id or supa.user_from_rows(profile)
             if not user_id:
-                raise wc.Fail(f'Could not find the Supabase user for {a.email} (pass --user-id)', 4)
-            state['user_id'] = user_id; state['user_email'] = a.email.lower()
-        log(f'Supabase user: {user_id[:8]}… (profile {a.profile})')
+                raise wc.Fail(f'Could not find the Supabase user for profile {profile}'
+                              + (f' ({email})' if email else ' (no rows yet, or rows from several accounts)')
+                              + f' – pass --profile {profile} --user-id <uuid>', 4)
+            state['user_id'] = user_id; state['user_email'] = email
+        log(f'Supabase user: {user_id[:8]}… (profile {profile})')
 
     # 3) Compare with what's there and write.
-    existing = supa.existing(user_id, a.profile, list(recs)) if supa else {}
+    existing = supa.existing(user_id, profile, list(recs)) if supa else {}
     writes, skipped = plan(recs, existing)
     ins = [d for act, d, _ in writes if act == 'insert']; upd = [d for act, d, _ in writes if act == 'update']
     log(f'Plan: {len(ins)} insert, {len(upd)} update, {sum(len(v) for v in skipped.values())} skip'
@@ -304,15 +346,17 @@ def run(a):
         log('Dry run: nothing written to Supabase; sync state unchanged.')
         if w.refreshed: log('  (rotated Withings tokens were saved)')
         return 0
-    rows = [{'user_id': user_id, 'profile': a.profile, **r} for _, _, r in writes]
+    rows = [{'user_id': user_id, 'profile': profile, **r} for _, _, r in writes]
     if rows:
         supa.upsert(rows)
-        after = supa.existing(user_id, a.profile, [d for _, d, _ in writes])
+        after = supa.existing(user_id, profile, [d for _, d, _ in writes])
         lost = [r['id'] for r in rows if r['id'] not in after or parse_ts(after[r['id']]['updated_at']) != parse_ts(r['updated_at'])]
         if lost:
             log(f'  note: server kept a newer row for {len(lost)} day(s): {fmt_days(lost)}')
-    state.update({'lastupdate': new_cursor, 'last_run': started, 'last_written': len(rows), 'profile': a.profile})
-    wc.write_json_atomic(wc.STATE, state)
+    state.update({'lastupdate': new_cursor, 'last_run': started, 'last_written': len(rows), 'profile': profile,
+                  'withings_userid': w.userid})
+    if recs: state['latest_day'] = max(max(recs), state.get('latest_day', ''))
+    wc.write_json_atomic(state_file, state)
     log(f'OK: wrote {len(rows)} row(s) to {TABLE}; next sync from {dt.datetime.fromtimestamp(new_cursor, tz):%Y-%m-%d %H:%M %Z}.')
     return 0
 

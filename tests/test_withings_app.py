@@ -1,5 +1,5 @@
 """Playwright tests for the Withings bits of the app: withings.html redirect, body-composition display,
-cloud pull keeping the extra fields, and the service worker (proplog-v11, withings.html not cached as the app).
+cloud pull keeping the extra fields, and the service worker (proplog-v12, withings.html not cached as the app); Nikki's Withings rows on her profile.
 Needs the site served at http://localhost:8766/prop-log/ (same as test_app_v2.py / test_sync.py)."""
 import json, os, re, sys, time
 from playwright.sync_api import sync_playwright
@@ -92,16 +92,41 @@ with sync_playwright() as p:
     ok('cloud pull: app does not re-push the unchanged Withings row', not any(x['id'] == '2026-10-27' for x in pushed), pushed)
     ctx.close()
 
+    # ---- v12: Nikki's own Withings rows (tools/withings_sync.py --profile nikki) show on her profile ----
+    ctx = context(service_workers='block'); asked = []
+    NROW = {'kind': 'bodyweight', 'id': '2026-10-28', 'data': WD('2026-10-28', 68.3, 31.2, 44.0, NOW - 7200000), 'updated_at': time.strftime('%Y-%m-%dT%H:%M:%S.000Z', time.gmtime((NOW - 7200000) / 1000)), 'deleted': False, 'synced_at': '2026-10-28T08:00:00.000001+00:00'}
+    def sbn(route):
+        r = route.request
+        if r.method == 'OPTIONS': return route.fulfill(status=200, headers=cors)
+        if '/rest/v1/proplog_data' in r.url and r.method == 'GET':
+            auth = r.headers.get('authorization', ''); asked.append((r.url, auth))
+            return route.fulfill(status=200, headers=cors, content_type='application/json', body=json.dumps([NROW] if 'profile=eq.nikki' in r.url and auth == 'Bearer atn' else []))
+        if '/rest/v1/proplog_data' in r.url and r.method == 'POST': return route.fulfill(status=201, headers=cors, body='')
+        return route.fulfill(status=404, headers=cors, content_type='application/json', body='{}')
+    ctx.route(SB + '/**', sbn); pg = page(ctx, 'nikki')
+    pg.goto(URL); pg.evaluate('localStorage.clear()')
+    nsess = {'session': {'access_token': 'atn', 'refresh_token': 'rtn', 'expires_at': int(time.time()) + 3600, 'user': {'id': 'u-nikki', 'email': 'nikki@example.com'}}, 'linkedUser': 'u-nikki'}
+    pg.evaluate(f"localStorage.setItem('proplog.migrated.v2','1');localStorage.setItem('proplog.profile','nikki');localStorage.setItem('proplog.v1:tom',{json.dumps(json.dumps(LOCAL))});localStorage.setItem('proplog.sync:nikki',{json.dumps(json.dumps(nsess))})")
+    pg.reload(); pg.wait_for_function("window.__proplog.db.bodyweight.length===1", timeout=8000)
+    pg.click('#tabs button[data-view=body]')
+    body = pg.inner_text('#bwBody'); comp = pg.inner_text('#bwComp') if pg.query_selector('#bwComp') else ''
+    ok("nikki: her Withings weight shows on her Body tab", pg.inner_text('#bwBody .stats .stat .v') == '68.3' and pg.locator('#bwBody .pill.wd').count() >= 1 and '31.2' in comp, (body, comp))
+    ok("nikki: Tom's weights not shown for Nikki", '134.6' not in body and '135.4' not in body, body)
+    ok("nikki: pull asks for profile nikki rows with her own sign-in (RLS = her user id)", any('profile=eq.nikki' in u and a == 'Bearer atn' for u, a in asked), asked)
+    ok("nikki: header shows her latest kg", '68.3' in pg.inner_text('#hdrSub'))
+    pg.screenshot(path=SHOTS + 'bodyweight-nikki-withings.png', full_page=True)
+    ctx.close()
+
     # ---- service worker ----
     ctx = context(); pg = page(ctx, 'sw')
     pg.goto(URL); pg.wait_for_function("navigator.serviceWorker.controller!==null||new Promise(r=>navigator.serviceWorker.ready.then(()=>r(true)))", timeout=10000)
     pg.reload(); pg.wait_for_function("navigator.serviceWorker.controller!==null", timeout=10000)
     keys = pg.evaluate("caches.keys()")
-    ok('sw: cache is proplog-v11', keys == ['proplog-v11'], keys)
-    pg.wait_for_function("caches.open('proplog-v11').then(c=>c.match('./withings.html')).then(r=>!!r)", timeout=5000)
+    ok('sw: cache is proplog-v12', keys == ['proplog-v12'], keys)
+    pg.wait_for_function("caches.open('proplog-v12').then(c=>c.match('./withings.html')).then(r=>!!r)", timeout=5000)
     ok('sw: withings.html precached', True)
     pg.goto(BASE + 'withings.html'); pg.wait_for_load_state('networkidle'); pg.wait_for_timeout(500)
-    t = pg.evaluate("caches.open('proplog-v11').then(c=>c.match('./index.html')).then(r=>r.text())")
+    t = pg.evaluate("caches.open('proplog-v12').then(c=>c.match('./index.html')).then(r=>r.text())")
     ok('sw: visiting withings.html does not overwrite the cached app page', 'Prop Log – Workout Tracker' in t and 'Withings connect' not in t)
     ctx.set_offline(True); pg.goto(URL); pg.wait_for_load_state()
     ok('sw: app still opens offline', pg.title().startswith('Prop Log – Workout Tracker'))

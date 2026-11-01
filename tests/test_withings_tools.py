@@ -18,9 +18,11 @@ class Mock:
         s.users = [{'id': 'aaaaaaaa-0000-4000-8000-000000000001', 'email': 'someone@else.com'},
                    {'id': 'bbbbbbbb-0000-4000-8000-0000000000aa', 'email': 'TomHine82@btinternet.com'}]
         s.key = SECRET; s.seq = 0; s.fail_refresh = False; s.admin_fails = False
-    def issue(s, expires_in=10800):
-        s.n += 1; at, rt = f'AT{s.n}', f'RT{s.n}'; s.access[at] = time.time() + expires_in; s.refresh[rt] = True
-        return {'status': 0, 'body': {'userid': 4242, 'access_token': at, 'refresh_token': rt, 'expires_in': expires_in, 'scope': 'user.metrics', 'token_type': 'Bearer'}}
+        s.next_uid = 4242; s.uid_of = {}; s.groups_by = {}   # one Withings account, several Withings users
+    def issue(s, expires_in=10800, uid=None):
+        uid = uid or s.next_uid
+        s.n += 1; at, rt = f'AT{s.n}', f'RT{s.n}'; s.access[at] = time.time() + expires_in; s.refresh[rt] = uid; s.uid_of[at] = uid
+        return {'status': 0, 'body': {'userid': uid, 'access_token': at, 'refresh_token': rt, 'expires_in': expires_in, 'scope': 'user.metrics', 'token_type': 'Bearer'}}
 M = Mock()
 
 class H(http.server.BaseHTTPRequestHandler):
@@ -43,14 +45,15 @@ class H(http.server.BaseHTTPRequestHandler):
                     M.codes.discard(f['code']); return self.send(200, M.issue())
                 return self.send(200, {'status': 503, 'error': 'Invalid code'})
             if f.get('grant_type') == 'refresh_token':
-                if M.fail_refresh or not M.refresh.pop(f.get('refresh_token'), None): return self.send(200, {'status': 503, 'error': 'invalid refresh_token'})
-                return self.send(200, M.issue())
+                uid = None if M.fail_refresh else M.refresh.pop(f.get('refresh_token'), None)
+                if not uid: return self.send(200, {'status': 503, 'error': 'invalid refresh_token'})
+                return self.send(200, M.issue(uid=uid))
             return self.send(200, {'status': 503})
         if u.path == '/measure':
             f = dict(urllib.parse.parse_qsl(raw)); at = (self.headers.get('Authorization') or '')[7:]
             if M.access.get(at, 0) < time.time(): return self.send(200, {'status': 401, 'error': 'invalid_token'})
             assert f['action'] == 'getmeas' and f['meastypes'] == '1,6,8,76,77,88' and f['category'] == '1'
-            g = M.groups
+            g = M.groups_by.get(M.uid_of.get(at), M.groups)
             if 'lastupdate' in f: g = [x for x in g if x['modified'] > int(f['lastupdate'])]
             if 'startdate' in f: g = [x for x in g if int(f['startdate']) <= x['date'] <= int(f['enddate'])]
             off = int(f.get('offset') or 0); page = g[off:off + 3]   # tiny pages to exercise 'more'/'offset'
@@ -235,10 +238,83 @@ def deny(self, m):
     if self.path.startswith('/rest/v1/proplog_data') and m == 'POST':
         self.body(); return self.send(403, {'code': '42501', 'message': 'permission denied for table proplog_data'})
     return orig(self, m)
-H.route = deny; M.groups.append(grp(day(0) + 'T06:00:00', 133.9, mod=1900000000))
+H.route = deny; M.groups.append(grp(NOW - 120, 133.9, mod=1900000000))   # v12: 'now', not 06:00 today (that is in the future before 6am)
 code, out = run('withings_sync.py', env={'SUPABASE_SERVICE_KEY': LEGACY})
 ok('sync: permission denied -> exit 4 + points at supabase/withings.sql', code == 4 and 'withings.sql' in out, out)
 H.route = orig
+
+# ================= v12: one Withings user per Prop Log profile (Tom + Nikki) =================
+NIK = 'cccccccc-0000-4000-8000-0000000000bb'
+TOKN = os.path.join(HOME, 'withings_tokens.nikki.json'); STATEN = os.path.join(HOME, 'withings_state.nikki.json')
+tokn = lambda: json.load(open(TOKN))
+del M.rows[(TOM, 'nikki', 'bodyweight', D1)]
+M.rows[(NIK, 'nikki', 'session', 's1')] = {'user_id': NIK, 'profile': 'nikki', 'kind': 'session', 'id': 's1', 'data': {'id': 's1'}, 'updated_at': OLD(D1, '06:00:00'), 'deleted': False, 'synced_at': 0}
+M.key = SECRET
+for f in (STATE,):
+    if os.path.exists(f): os.remove(f)
+code, out = run('withings_auth.py', '--profile', 'bob', '--code', 'X')
+ok('multi: unknown profile refused', code == 2 and 'Unknown profile' in out, out)
+
+# server mode for nikki: URL only in the per-profile file, success page names Nikki
+M.next_uid = 5555
+proc = subprocess.Popen([sys.executable, os.path.join(TOOLS, 'withings_auth.py'), '--profile', 'nikki', '--port', str(PORT), '--timeout', '20', '--no-print-url'],
+                        env=ENV, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+UF = os.path.join(HOME, 'withings_authorize_url.nikki.txt')
+for _ in range(100):
+    if os.path.exists(UF) and os.path.getsize(UF): break
+    time.sleep(0.1)
+nurl = open(UF).read().strip() if os.path.exists(UF) else ''
+ok('multi: --profile nikki writes withings_authorize_url.nikki.txt (600)', nurl.startswith(BASE + '/oauth2_user/authorize2?') and stat.S_IMODE(os.stat(UF).st_mode) == 0o600)
+nq = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(nurl).query))
+tom_before = tok()
+M.codes.add('NIKCODE')
+st, body = cb(urllib.parse.urlencode({'code': 'NIKCODE', 'state': nq.get('state', '')}))
+out = proc.communicate(timeout=10)[0]
+ok('multi: nikki consent saved to withings_tokens.nikki.json, page names Nikki', st == 200 and 'Nikki' in body and proc.returncode == 0 and os.path.exists(TOKN)
+   and str(tokn()['userid']) == '5555' and tokn()['profile'] == 'nikki' and stat.S_IMODE(os.stat(TOKN).st_mode) == 0o600, (st, body[:300], out))
+ok('multi: --no-print-url keeps the URL out of stdout; no secrets', 'oauth2_user/authorize2' not in out and 'NIKCODE' not in out and 'test-secret' not in out, out)
+ok("multi: Tom's token untouched by Nikki's link", tok() == tom_before)
+
+# wrong person picked on the consent screen: token belongs to Tom's Withings user -> saved for tom, nikki unchanged
+nik_before = tokn(); M.next_uid = 4242; M.codes.add('WRONGPICK')
+code, out = run('withings_auth.py', '--profile', 'nikki', '--code', 'WRONGPICK')
+ok('multi: consent for an already-linked Withings user is refused for nikki', code == 5 and 'already linked to profile tom' in out and 'choose Nikki' in out, out)
+ok('multi: ...nikki token unchanged, fresh token kept for tom', tokn() == nik_before and str(tok()['userid']) == '4242' and tok()['refresh_token'] != tom_before['refresh_token'], (tok(), tom_before))
+
+# sync: both profiles, each Withings user into its own profile + owner
+M.groups_by[5555] = [grp(D2 + 'T08:00:00', 68.4, 31.0), grp(D1 + 'T08:05:00', 68.1)]
+M.calls.clear()
+code, out = run('withings_sync.py', env={'SUPABASE_SERVICE_KEY': SECRET})
+ok('multi: sync runs every linked profile', code == 0 and '== profile tom ==' in out and '== profile nikki ==' in out and '-> profile nikki' in out, out)
+RN = lambda d: M.rows.get((NIK, 'nikki', 'bodyweight', d))
+ok("multi: Nikki's readings land in profile nikki under Nikki's user_id", RN(D1) and RN(D1)['data']['kg'] == 68.1 and RN(D2)['data']['kg'] == 68.4 and RN(D2)['data']['fat_pct'] == 31.0, out)
+ok("multi: Nikki's readings never written to Tom", not any(k[1] == 'tom' and r['data'].get('kg', 999) < 100 for k, r in M.rows.items() if k[2] == 'bodyweight')
+   and not any(k[1] == 'nikki' and k[0] != NIK for k in M.rows))
+ok("multi: Tom's readings never written to Nikki", not any(k[1] == 'nikki' and k[2] == 'bodyweight' and r['data'].get('kg', 0) > 100 for k, r in M.rows.items()))
+sn = json.load(open(STATEN))
+ok('multi: per-profile state (nikki user + Withings user cached, 600)', sn['user_id'] == NIK and sn['profile'] == 'nikki' and sn['withings_userid'] == '5555'
+   and stat.S_IMODE(os.stat(STATEN).st_mode) == 0o600 and json.load(open(STATE))['profile'] == 'tom', sn)
+ok('multi: no secrets in output', all(x not in out for x in (SECRET, 'test-secret')) and not any(f'RT{i}' in out or f'AT{i} ' in out for i in range(1, M.n + 1)), out)
+
+M.calls.clear()
+code, out = run('withings_sync.py', '--profile', 'nikki', '--dry-run', env={'SUPABASE_SERVICE_KEY': SECRET})
+ok('multi: --profile nikki syncs only nikki', code == 0 and '-> profile nikki' in out and 'profile tom' not in out, out)
+code, out = run('withings_sync.py', '--user-id', TOM, env={'SUPABASE_SERVICE_KEY': SECRET})
+ok('multi: --user-id without --profile refused', code == 2, out)
+
+# duplicate link guard: nikki's token file pointing at Tom's Withings user
+good_nik = tokn(); bad = dict(tok()); json.dump(bad, open(TOKN, 'w'))
+M.groups.append(grp(NOW - 60, 133.5, mod=1950000000))
+rows_nik = {k: v for k, v in M.rows.items() if k[1] == 'nikki'}
+code, out = run('withings_sync.py', env={'SUPABASE_SERVICE_KEY': SECRET})
+ok('multi: same Withings user on two profiles -> nikki refused, tom still synced', code == 5 and 'linked to both tom and nikki' in out and 'profile tom' in out
+   and {k: v for k, v in M.rows.items() if k[1] == 'nikki'} == rows_nik and R(day(0)) and R(day(0))['data']['kg'] == 133.5, out)
+json.dump(good_nik, open(TOKN, 'w'))
+
+# nikki's Withings link dead -> tom still syncs, exit 3 with nikki re-auth command
+t = tokn(); t['expires_at'] = 0; t['refresh_token'] = 'DEAD'; json.dump(t, open(TOKN, 'w'))
+code, out = run('withings_sync.py', env={'SUPABASE_SERVICE_KEY': SECRET})
+ok('multi: one profile failing does not stop the other', code == 3 and 'withings_auth.py --profile nikki' in out and 'OK: wrote' in out, out)
 
 srv.shutdown(); shutil.rmtree(HOME, ignore_errors=True)
 print('\nRESULTS: %d/%d passed' % (sum(r for _, r in results), len(results)))

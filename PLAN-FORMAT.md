@@ -51,6 +51,15 @@ so ADDED/SKIPPED flags in the coach summary are the same on every device.
               "rest": "3 min",       // optional string
               "notes": "RPE 8",      // optional string
               "video": "https://www.youtube.com/watch?v=XXXXXXXXXXX"  // optional – see "How-to videos"
+            },
+            {                        // v12: a cardio / timed exercise (see "Cardio and timed exercises")
+              "name": "Turbo bike",
+              "type": "cardio",      // optional: "cardio" or "strength"; default = guessed from the name
+              "metrics": ["time", "distance", "calories", "hr"],  // optional: which inputs the Log tab shows
+              "sets": 1,             // number of entries (intervals/pieces) pre-filled
+              "reps": "20-25 min",   // still shown as the target ("1 × 20-25 min")
+              "duration": "25 min",  // optional target time: "25 min", "25:00", "1:10:00", "90s"
+              "distanceKm": 10       // optional target distance in km
             }
           ]
         }
@@ -87,6 +96,27 @@ Session types: `Lower strength`, `Upper strength`, `Running conditioning`, `Ride
   * `MISSED planned sessions:` – past plan days with exercises and nothing logged (only counted from
     the plan's `updated` date onward)
 
+## Cardio and timed exercises
+
+An exercise is logged either as **reps & kg** (default) or as **time & distance**: each entry has a
+duration (typed as `mm:ss`, `h:mm:ss` or plain minutes), km, kcal and average heart rate, as read off a
+tracker watch, bike or rower. All fields are optional per entry.
+
+* Plan exercise fields (all optional): `"type": "cardio"` (or `"strength"` to force reps & kg),
+  `"metrics"` – any of `"time"`, `"distance"`, `"calories"`, `"hr"` (a non-empty list also means cardio),
+  `"duration"` and `"distanceKm"` (targets, shown as placeholders and in the plan line, e.g.
+  `1 × 25 min · 10 km`).
+* Without `type`/`metrics` the app guesses from the name: run, jog, bike/cycle/turbo/assault bike, row(ing)
+  machine/rower, ski erg, swim, walk, treadmill, conditioning, sprint, interval(s), aerobics, HIIT → cardio.
+  Names that are clearly weights win (`Dumbbell row`, `Seated cable row`, `Dumbbell walking lunge`,
+  `Farmer's carry` stay reps & kg).
+* The athlete can switch any exercise in the Log tab (**Reps & kg** / **⏱ Time & distance**) and choose
+  **Log as** per exercise in **Edit plan**.
+* A cardio exercise in a saved session (and in the synced `session` row) looks like
+  `{"name": "Easy run", "mode": "cardio", "sets": [{"secs": 1530, "km": 5, "kcal": 320, "hr": 148}]}`.
+  Weights exercises keep `{"name", "sets": [{"reps", "weight"}]}`; older sessions are unchanged.
+* Share text shows cardio as `Easy run: 25:30 · 5 km · 320 kcal · HR 148 · 5:06/km`.
+
 ## How-to videos
 
 Every exercise shows a small **▶ How to** link next to its name on the Plan tab and in the Log tab, which opens
@@ -105,6 +135,7 @@ YouTube in a new tab (or the YouTube app on a phone).
 ## Edits from the athlete
 
 The Plan tab has **Edit plan**. The athlete can change exercise name, sets, reps, target kg, rest and notes,
+**Log as** (reps & kg / cardio) with a target duration and distance for cardio,
 add, remove and reorder exercises, change a day's title or type, mark a day as rest, and write a free-text
 **Note to my coach**. Save replaces that person's plan inside the app (Plan tab, Start this session, How to
 links) and shows an **Edited by you** tag. **Reset to coach's plan** throws the edits away.
