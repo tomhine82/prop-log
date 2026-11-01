@@ -3,11 +3,12 @@
   "athlete": "Nikki",
   "title": "Beginner strength & fitness (knee-friendly)",
   "author": "Nikki Workout Bot",
-  "updated": "2026-10-27",
-  "notes": "Knee-friendly: no lunges, jumping or heavy squats. Start light; add reps until all sets feel comfortable, then go up a little in weight. If knee pain goes above about 3/10 during a session or the next day, drop that exercise and flag it.",
+  "updated": "2026-11-01",
+  "notes": "Please log reps as well as weights so I can progress things properly. Add reps until all sets feel comfortable, then go up a little in weight. If knee pain goes above about 3/10 during a session or the next day, drop that exercise and flag it in a comment.",
   "weeks": [
     {
-      "label": "Weekly plan",
+      "label": "Week 2",
+      "startDate": "2026-11-02",
       "days": [
         {
           "day": "Mon",
@@ -20,31 +21,31 @@
               "name": "Glute bridge",
               "sets": 3,
               "reps": "12",
-              "targetKg": null,
+              "targetKg": 10,
               "rest": "60s",
-              "notes": "Bodyweight. Squeeze glutes at top"
+              "notes": "Hold weight, log reps"
             },
             {
               "name": "Dumbbell Romanian deadlift",
               "sets": 3,
               "reps": "10",
-              "targetKg": null,
+              "targetKg": 10,
               "rest": "90s",
-              "notes": "Light DBs, soft knees, hinge at hips"
+              "notes": "All three sets at 10kg, soft knees"
             },
             {
               "name": "Dumbbell bench press",
               "sets": 3,
-              "reps": "10",
-              "targetKg": null,
+              "reps": "12",
+              "targetKg": 5,
               "rest": "90s",
-              "notes": ""
+              "notes": "Add reps before weight"
             },
             {
               "name": "One-arm dumbbell row",
               "sets": 3,
               "reps": "10 each side",
-              "targetKg": null,
+              "targetKg": 7.5,
               "rest": "60s",
               "notes": ""
             },
@@ -52,17 +53,17 @@
               "name": "Kettlebell farmer's carry",
               "sets": 3,
               "reps": "30m",
-              "targetKg": null,
+              "targetKg": 10,
               "rest": "60s",
               "notes": "Tall posture"
             },
             {
               "name": "Dead bug",
               "sets": 3,
-              "reps": "8 each side",
+              "reps": "10 each side",
               "targetKg": null,
               "rest": "45s",
-              "notes": "Bodyweight. Lower back flat"
+              "notes": ""
             }
           ]
         },
@@ -75,11 +76,18 @@
           "exercises": [
             {
               "name": "Turbo bike",
+              "type": "cardio",
+              "metrics": [
+                "time",
+                "distance",
+                "calories",
+                "hr"
+              ],
               "sets": 1,
               "reps": "20-25 min",
               "targetKg": null,
               "rest": "",
-              "notes": "Easy, conversational pace. From week 3 add 5 x 1 min a bit harder with 2 min easy between"
+              "notes": "Easy, conversational pace"
             }
           ]
         },
@@ -94,7 +102,7 @@
               "name": "Hip thrust (back on bench)",
               "sets": 3,
               "reps": "12",
-              "targetKg": null,
+              "targetKg": 12.5,
               "rest": "60s",
               "notes": ""
             },
@@ -102,41 +110,41 @@
               "name": "Kettlebell deadlift",
               "sets": 3,
               "reps": "10",
-              "targetKg": null,
+              "targetKg": 16,
               "rest": "90s",
-              "notes": "Hinge, not squat"
+              "notes": "Hinge, not squat. If 16 feels too heavy, stay at 12 for 3 x 14"
             },
             {
               "name": "Seated dumbbell shoulder press",
               "sets": 3,
-              "reps": "10",
-              "targetKg": null,
+              "reps": "12",
+              "targetKg": 5,
               "rest": "60s",
               "notes": ""
             },
             {
               "name": "Inverted row (barbell in rack)",
               "sets": 3,
-              "reps": "8",
-              "targetKg": null,
-              "rest": "60s",
-              "notes": "Bodyweight. Raise bar to make easier"
-            },
-            {
-              "name": "Sit to bench and stand",
-              "sets": 2,
               "reps": "10",
               "targetKg": null,
               "rest": "60s",
-              "notes": "Optional, only if knees are pain-free"
+              "notes": "Raise bar to make easier"
+            },
+            {
+              "name": "Sit to bench and stand",
+              "sets": 3,
+              "reps": "10",
+              "targetKg": null,
+              "rest": "60s",
+              "notes": "Only if knees are pain-free"
             },
             {
               "name": "Side plank",
               "sets": 3,
-              "reps": "15-20s each side",
+              "reps": "20s each side",
               "targetKg": null,
               "rest": "45s",
-              "notes": "Bodyweight"
+              "notes": ""
             }
           ]
         },
@@ -149,6 +157,13 @@
           "exercises": [
             {
               "name": "Turbo bike",
+              "type": "cardio",
+              "metrics": [
+                "time",
+                "distance",
+                "calories",
+                "hr"
+              ],
               "sets": 1,
               "reps": "20 min",
               "targetKg": null,
@@ -168,31 +183,31 @@
               "name": "Glute bridge",
               "sets": 3,
               "reps": "12",
-              "targetKg": null,
+              "targetKg": 10,
               "rest": "60s",
-              "notes": "Bodyweight. Squeeze glutes at top"
+              "notes": "Hold weight, log reps"
             },
             {
               "name": "Dumbbell Romanian deadlift",
               "sets": 3,
               "reps": "10",
-              "targetKg": null,
+              "targetKg": 10,
               "rest": "90s",
-              "notes": "Light DBs, soft knees, hinge at hips"
+              "notes": "All three sets at 10kg, soft knees"
             },
             {
               "name": "Dumbbell bench press",
               "sets": 3,
-              "reps": "10",
-              "targetKg": null,
+              "reps": "12",
+              "targetKg": 5,
               "rest": "90s",
-              "notes": ""
+              "notes": "Add reps before weight"
             },
             {
               "name": "One-arm dumbbell row",
               "sets": 3,
               "reps": "10 each side",
-              "targetKg": null,
+              "targetKg": 7.5,
               "rest": "60s",
               "notes": ""
             },
@@ -200,17 +215,17 @@
               "name": "Kettlebell farmer's carry",
               "sets": 3,
               "reps": "30m",
-              "targetKg": null,
+              "targetKg": 10,
               "rest": "60s",
               "notes": "Tall posture"
             },
             {
               "name": "Dead bug",
               "sets": 3,
-              "reps": "8 each side",
+              "reps": "10 each side",
               "targetKg": null,
               "rest": "45s",
-              "notes": "Bodyweight. Lower back flat"
+              "notes": ""
             }
           ]
         },
@@ -223,11 +238,18 @@
           "exercises": [
             {
               "name": "Dog walk",
+              "type": "cardio",
+              "metrics": [
+                "time",
+                "distance",
+                "calories",
+                "hr"
+              ],
               "sets": 1,
               "reps": "Long walk",
               "targetKg": null,
               "rest": "",
-              "notes": "Counts as the session. If no big walk today: turbo bike 1 x 30 min easy"
+              "notes": "Long walk counts as the session (last week's 8 km in 95 min was great). If no big walk: turbo 1 x 30 min easy."
             }
           ]
         },
