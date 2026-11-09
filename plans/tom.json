@@ -3,8 +3,8 @@
   "athlete": "Tom",
   "title": "In-season week (fallback template)",
   "author": "Grok Bot",
-  "updated": "2026-10-27",
-  "notes": "In-season: rugby Thu 7–8:30pm, match Sat 2pm. Leave 1–2 reps in the tank on every lift; no grinders after Wednesday. targetKg is blank until we know your working weights – log what you lift and the plan will be updated from your logs.",
+  "updated": "2026-11-09",
+  "notes": "In-season: rugby Thu 7–8:30pm, match Sat 2pm. Leave 1–2 reps in the tank on every lift; no grinders after Wednesday. targetKg is blank until we know your working weights – log what you lift and the plan will be updated from your logs. Week of 9 Nov: targets set from last week's logs. Knee and chest are still sore from Saturday, so no load increases yet. If the knee swells, locks or gives way, or chest pain persists or hurts when breathing, get assessed before training or playing.",
   "weeks": [
     {
       "label": "In-season week",
@@ -14,35 +14,37 @@
           "focus": "Squat + hinge, single-leg, neck",
           "notes": "Warm up 10 min (bike or skipping + hip mobility). If legs are still smashed from Saturday, drop one set from each lift.",
           "exercises": [
-            { "name": "Back squat", "sets": 4, "reps": "5", "targetKg": null, "rest": "3 min", "notes": "Build to a solid 5, ~RPE 8" },
-            { "name": "Romanian deadlift", "sets": 3, "reps": "8", "targetKg": null, "rest": "2 min", "notes": "Slow lowering" },
-            { "name": "Dumbbell walking lunge", "sets": 3, "reps": "10/leg", "targetKg": null, "rest": "90s", "notes": "" },
-            { "name": "Kettlebell swing", "sets": 3, "reps": "15", "targetKg": null, "rest": "60s", "notes": "Explosive hips" },
+            { "name": "Back squat", "sets": 4, "reps": "5", "targetKg": 70, "rest": "3 min", "notes": "Hold at 70 while the knee settles." },
+            { "name": "Romanian deadlift", "sets": 3, "reps": "8", "targetKg": 70, "rest": "2 min", "notes": "Slow lowering" },
+            { "name": "Dumbbell walking lunge", "sets": 3, "reps": "10/leg", "targetKg": 16, "rest": "90s", "notes": "Only if the knee is comfortable; otherwise bodyweight or skip." },
+            { "name": "Kettlebell swing", "sets": 3, "reps": "15", "targetKg": 16, "rest": "60s", "notes": "Explosive hips" },
             { "name": "Neck work", "sets": 3, "reps": "15", "targetKg": null, "rest": "45s", "notes": "Front/back/sides, controlled" }
           ]
         },
         {
           "day": "Tue", "title": "Easy run or ride", "type": "Running conditioning",
-          "focus": "Aerobic base, 30–45 min easy",
-          "notes": "Option A: 25–30 min easy run (conversational pace) + 6 × 15s strides. Option B: 45–60 min easy ride. Keep it easy – this is recovery plus engine building.",
-          "exercises": []
+          "focus": "Easy 30–40 min run, walk or bike",
+          "notes": "Easy pace, around HR 120s. Skip strides if the knee is sore. 6 × 15s strides only if the knee is happy. Keep it easy – this is recovery plus engine building.",
+          "exercises": [
+            { "name": "Easy run, walk or bike", "type": "cardio", "metrics": ["time", "distance", "calories", "hr"], "sets": 1, "reps": "30-40 min", "targetKg": null, "notes": "Easy pace, around HR 120s. Skip strides if the knee is sore." }
+          ]
         },
         {
           "day": "Wed", "title": "Upper strength", "type": "Upper strength",
           "focus": "Press, pull, carries",
           "notes": "Keep it crisp – Thursday is training.",
           "exercises": [
-            { "name": "Bench press", "sets": 4, "reps": "5", "targetKg": null, "rest": "3 min", "notes": "~RPE 8" },
-            { "name": "Pull-up", "sets": 4, "reps": "6-8", "targetKg": null, "rest": "2 min", "notes": "Leave kg blank for bodyweight; add load if 8 is easy" },
-            { "name": "Overhead press", "sets": 3, "reps": "6-8", "targetKg": null, "rest": "2 min", "notes": "" },
-            { "name": "Dumbbell row", "sets": 3, "reps": "10/arm", "targetKg": null, "rest": "90s", "notes": "" },
-            { "name": "Sandbag bear-hug carry", "sets": 3, "reps": "30m", "targetKg": 15, "rest": "60s", "notes": "15kg sandbag, brace hard" }
+            { "name": "Bench press", "sets": 4, "reps": "5", "targetKg": 40, "rest": "3 min", "notes": "Keep it light and pain-free while the chest is sore; don't jump back to 70." },
+            { "name": "Pull-up", "sets": 4, "reps": "8-10", "targetKg": null, "rest": "2 min", "notes": "Leave kg blank for bodyweight; add load if 8 is easy" },
+            { "name": "Overhead press", "sets": 3, "reps": "6-8", "targetKg": 12.5, "rest": "2 min", "notes": "" },
+            { "name": "Dumbbell row", "sets": 3, "reps": "10/arm", "targetKg": 22.5, "rest": "90s", "notes": "" },
+            { "name": "Sandbag bear-hug carry", "sets": 3, "reps": "30m", "targetKg": 15, "rest": "60s", "notes": "Optional. 15kg sandbag, brace hard" }
           ]
         },
         {
           "day": "Thu", "title": "Rugby training", "type": "Rugby training",
           "focus": "Club training 7–8:30pm – no gym",
-          "notes": "Log feel, RPE and any scrum/contact notes.",
+          "notes": "Log feel, RPE and any scrum/contact notes. Subject to how the knee and chest feel.",
           "exercises": []
         },
         {
@@ -54,7 +56,7 @@
         {
           "day": "Sat", "title": "Match", "type": "Match",
           "focus": "Kick-off 2pm",
-          "notes": "Log minutes played, scrum count/feel and any knocks.",
+          "notes": "Log minutes played, scrum count/feel and any knocks. Subject to how the knee and chest feel.",
           "exercises": []
         },
         {
