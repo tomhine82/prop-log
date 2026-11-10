@@ -15,7 +15,7 @@ results, errors = [], []
 def ok(n, c, extra=''):
     results.append((n, bool(c))); print(('PASS ' if c else 'FAIL ') + n + ('' if c else ' :: ' + str(extra)[:600]))
 
-ok('sw cache proplog-v13', "const CACHE = 'proplog-v13';" in read('sw.js'))
+ok('sw cache proplog-v14', "const CACHE = 'proplog-v14';" in read('sw.js'))
 ok('PLAN-FORMAT documents cardio fields', all(k in read('PLAN-FORMAT.md') for k in ('"type": "cardio"', 'metrics', 'duration', 'distanceKm')))
 
 NOW = int(time.time() * 1000)

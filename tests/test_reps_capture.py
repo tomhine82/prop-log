@@ -17,7 +17,7 @@ results, errors = [], []
 def ok(n, c, extra=''):
     results.append((n, bool(c))); print(('PASS ' if c else 'FAIL ') + n + ('' if c else ' :: ' + str(extra)[:600]))
 
-ok('sw cache proplog-v13', "const CACHE = 'proplog-v13';" in read('sw.js'))
+ok('sw cache proplog-v14', "const CACHE = 'proplog-v14';" in read('sw.js'))
 
 X = lambda n, s, r, kg=None: {'name': n, 'sets': s, 'reps': r, 'targetKg': kg, 'rest': '', 'notes': ''}
 PLAN = {'version': 1, 'athlete': 'Nikki', 'title': 'week 1', 'updated': '2026-10-27', 'weeks': [{'label': 'Weekly plan', 'days': [

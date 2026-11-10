@@ -1,31 +1,38 @@
-# Prop Log v13 – reps that looked entered but weren't saved (base: v12, commit 519422a)
+# Prop Log v14 – visible sync status and retry (base: v13 working tree)
 
 Unzip at the repo root (paths are repo paths). Not pushed. No Supabase changes.
 
-## The bug
-Since v9 (theme, 28 Oct 18:13 UTC) an empty reps box showed the plan's reps ("10", "10 each side", "30m") as a
-placeholder in near-white (#AEBDEB, opacity 1) at the same 18px bold as typed numbers, on the blue card. A box
-looked filled in when it was empty. People typed the kg (its placeholder just said "kg") and tapped Save, and only
-the kg was stored, with `reps: null`. Nikki's Wed 28 Oct session was logged at 16:53 UTC, before v9 went live, when
-placeholders were faint grey, and has every rep. Her Fri 30 Oct session (v9–v11) has kg on every set and no reps.
+## Why
+Nikki completed workouts in the week of 2–8 Nov 2026 that never reached the cloud. The server has no
+rows for her after 1 Nov, and her signed-in copy last contacted Supabase on Monday 2 Nov at 08:22 GMT
+(a token refresh and a successful pull – no upload). There were no 23514 / 401 / 403 errors on
+`proplog_data` for her: the workouts were never sent.
+
+The most likely reason is that she saved them in a copy of the app that was not signed in (Safari and
+the Home Screen icon each have their own storage on iPhone). The app said "Session saved ✓" even when
+nothing was backed up, and hid the sync pill when signed out, so it was easy to miss.
+
+A rejected `kind = 'plan'` row does **not** block session uploads in v11+: sessions and plans are
+pushed in separate batches. The plan-kind SQL still has not been applied (`proplog_data_kind_chk`
+still allows only `session` and `bodyweight`).
 
 ## Changed files
 | file | change |
 |---|---|
-| `index.html` | **Empty boxes look empty**: weights boxes show a generic faint italic "reps" / "kg" placeholder (all set-grid placeholders are faint, light and italic). The plan target stays in the "Plan:" hint. **"✓ Use plan: 10 reps @ 10 kg in empty boxes"** button per planned exercise fills only empty boxes (leading number of the plan reps: "10 each side" → 10, "30m" → 30, "15-20s" → 15; target kg if set). **Save asks** "N sets have kg but no reps (…)", and Cancel goes back with those boxes highlighted. **Capture**: set boxes listen to `input` and `change`, and Save reads every box again before saving, so a value is kept even if no event fired. **Sync merge**: a newer cloud copy never blanks a set value this device has (same exercise and set position). The merged record gets a new `updatedAt` and is re-uploaded. Real changes from the newer copy still win. **Stale edit**: when the saved session changed after an edit was opened, its values are kept in boxes left empty. Test hooks `__proplog.reps`. |
-| `sw.js` | cache `proplog-v13` |
-| `tests/test_auth_session.py`, `test_cardio.py`, `test_mark_profile.py`, `test_neil_profile.py`, `test_plan_editor.py`, `test_theme_video.py`, `test_withings_app.py` | expect `proplog-v13` |
+| `index.html` | Always show the header sync pill when cloud sync is configured, including "☁ not backed up" when signed out. Yellow banner when this phone has sessions that are not backed up, or when a signed-in sync fails – the banner includes the error and a Sign in / Retry button. Saving while signed out says "on this phone only – not backed up". Saving while signed in waits for the upload and warns if it failed. On open, wake, online and once a minute, every signed-in profile retries leftover session/bodyweight rows (not just the person currently on screen). Leftover workout queue items keep an error instead of looking "Synced". |
+| `sw.js` | cache `proplog-v14` |
+| `tests/test_auth_session.py`, `test_cardio.py`, `test_mark_profile.py`, `test_neil_profile.py`, `test_plan_editor.py`, `test_theme_video.py`, `test_withings_app.py`, `test_reps_capture.py` | expect `proplog-v14` |
 
 ## New files
 | file | |
 |---|---|
-| `tests/test_reps_capture.py` | regression (23 checks): placeholders, kg-without-reps prompt, Use plan, type then Save at once with focus still in the box, Save without input events, Nikki's stored sessions load unchanged, merge never blanks values and re-uploads, stale edit. Fails on v12 and passes on v13. |
+| `tests/test_sync_status.py` | banner and pill when signed out with local sessions; save-while-signed-out toast; failed upload shows the error; queued sessions on another profile upload when the app opens |
 | `CHANGES.md` | this file |
 
 ## Tests
-All 10 files in `tests/` pass: auth_session 35/35, cardio 44/44, mark_profile 30/30, neil_profile 35/35, plan_editor 20/20,
-reps_capture 23/23, set_password 12/12, theme_video 34/34, withings_app 27/27, withings_tools 55/55.
+Run the files in `tests/` against http://localhost:8766/prop-log/.
 
 ## Notes
-* Existing data isn't changed. Sessions saved with `reps: null` stay as they are. Nothing in the app back-fills them.
-* "Add exercise" still pre-fills set 1 with last time's real numbers, and "Copy last set" copies real values. Both are visible values, not placeholders.
+* Existing cloud rows are not changed. If Nikki's missing sessions are still on her phone, signing in
+  on that same copy (the Safari tab or the Home Screen icon she used) will upload them.
+* The Home Screen icon and Safari do not share a sign-in on iPhone.

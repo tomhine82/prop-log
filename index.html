@@ -124,6 +124,7 @@ nav.tabs button.on{color:var(--accent)}
 .sync-pill.ok{color:var(--accent)}.sync-pill.off{color:var(--warn)}.sync-pill.err{color:var(--danger)}
 header h1{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sync-status{font-weight:700}.sync-status.ok{color:var(--accent)}.sync-status.off{color:var(--warn)}.sync-status.err{color:var(--danger)}
+.banner.warn{background:color-mix(in srgb,var(--warn,#ffb020) 20%,var(--card));border-color:color-mix(in srgb,var(--warn,#ffb020) 55%,var(--line))}
 input.code{letter-spacing:.3em;text-align:center;font-size:22px;font-weight:700}
 .pw-wrap{display:flex;gap:8px;align-items:stretch}.pw-wrap input{flex:1;min-width:0}.pw-toggle{flex:none;min-width:68px;min-height:var(--tap)}
 .sync-msg{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:var(--card2);border:1px solid var(--line)}.sync-msg.err{color:var(--danger);font-weight:650}.sync-msg.warn{color:var(--text);border-color:var(--warn)}
@@ -189,6 +190,7 @@ a.vid:active{transform:scale(.97)}
   <button class="hdr-prof" id="profileBtn" aria-label="Switch person"><span class="av" id="profAv">T</span><span id="profName">Tom</span></button>
 </header>
 <main>
+<div class="banner warn hidden" id="syncBanner" role="status"><b id="syncBannerText"></b><button type="button" class="btn small" id="syncBannerBtn">Sign in</button></div>
 <!-- PLAN -->
 <section class="view" id="view-plan">
   <div id="planBody"></div>
@@ -640,7 +642,16 @@ $('#saveSession').addEventListener('click',()=>{
   else db.sessions.push({id:uid(),date:draft.date,type:draft.type,exercises,feel:draft.feel,rpe:draft.rpe,notes:draft.notes,createdAt:now,updatedAt:now,...(draft.plan?{plan:draft.plan}:{})});
   const wasEdit=!!draft.id;
   save();draft=blankDraft();saveDraft();renderPicker();renderLog();
-  toast(wasEdit?'Session updated ✓':'Session saved ✓');show('history');
+  if(window.__plSync&&!window.__plSync.signedIn(profile.id)){
+    toast((wasEdit?'Session updated':'Session saved')+' on this phone only – not backed up');
+    window.__plSync.render();}
+  else{
+    toast(wasEdit?'Session updated ✓':'Session saved ✓');
+    if(window.__plSync)window.__plSync.sync(profile.id).then(()=>{
+      const st=window.__plSync.state(profile.id);
+      const pending=(st.queue||[]).filter(k=>k.startsWith('session:')||k.startsWith('bodyweight:'));
+      if(st.error||pending.length)toast('Saved here, but not synced'+(st.error?': '+st.error:''));});}
+  show('history');
 });
 $('#unlinkPlan').addEventListener('click',()=>{delete draft.plan;draft.exercises.forEach(e=>delete e.planned);saveDraft();renderLog();toast('Unlinked from plan');});
 $('#cancelEdit').addEventListener('click',()=>{draft=blankDraft();saveDraft();renderLog();show('history');});
@@ -1235,7 +1246,10 @@ $('#dataShare').addEventListener('click',openShare);
 // the athlete's edited plan for the coach bot). Last-write-wins per record by updatedAt; deletes
 // become tombstones. Per-profile state in proplog.sync:<profile>. A 'plan' row is rejected with
 // HTTP 400 until supabase/plan_edits.sql widens proplog_data_kind_chk; that edit stays on the
-// device (planBlocked) and is retried on the next sync.
+// device (planBlocked) and is retried on the next sync. Sessions and bodyweight are pushed in a
+// separate batch so a blocked plan cannot prevent workouts uploading. v14: unsigned-in copies
+// show a visible "not backed up" banner; leftover session/bodyweight queue items keep an error
+// and every signed-in profile is retried on open, wake and once a minute.
 const Sync=(function(){
   const CFG=window.PROPLOG_CONFIG||{};const URLB=(CFG.supabaseUrl||'').replace(/\/$/,''),APIKEY=CFG.supabaseKey||'';
   const enabled=!!(URLB&&APIKEY);const TABLE='proplog_data';
@@ -1248,6 +1262,8 @@ const Sync=(function(){
     const editedAt=+e.editedAt||0;
     return {editedAt,data:{plan:e.plan,basedOnUpdated:e.basedOnUpdated||'',editedAt,coachNote:e.coachNote||'',changes:Array.isArray(e.changes)?e.changes:[]}};
   }
+  const workQueue=st=>(st.queue||[]).filter(k=>k.startsWith('session:')||k.startsWith('bodyweight:'));
+  const standaloneCopy=()=>{try{return !!(window.navigator.standalone||(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches));}catch(e){return false;}};
   const recKeys=(pid,d)=>{const m={};d.sessions.forEach(s=>m['session:'+s.id]=+s.updatedAt||0);d.bodyweight.forEach(b=>m['bodyweight:'+b.date]=+b.updatedAt||0);
     const pr=planPayload(pid);if(pr)m['plan:current']=pr.editedAt;return m;};
   const readDB=pid=>pid===profile.id?db:(()=>{try{const d=JSON.parse(localStorage.getItem(keysFor(pid).data));if(d&&Array.isArray(d.sessions))return normalise(d);}catch(e){}return {version:1,sessions:[],bodyweight:[]};})();
@@ -1439,8 +1455,10 @@ const Sync=(function(){
         const kindBlocked=e=>{const blob=JSON.stringify(e&&e.body||{})+' '+(e&&e.message||'');return e&&(e.status===400||e.status===409)&&/proplog_data_kind_chk|23514|check constraint/i.test(blob);};
         await pushChunks(others);
         try{await pushChunks(plans);const st=get(pid);st.planBlocked=false;put(pid,st);}
-        catch(e){if(!kindBlocked(e))throw e;const st=get(pid);st.planBlocked=true;st.error='';put(pid,st);}
-        const st=get(pid);st.lastSync=Date.now();st.error='';put(pid,st);setStatus(pid,'ok');
+        catch(e){if(!kindBlocked(e))throw e;const st=get(pid);st.planBlocked=true;put(pid,st);}
+        const st=get(pid),left=workQueue(st);
+        if(left.length){st.error=st.error||(left.length+' workout'+(left.length>1?'s':'')+' waiting to upload');put(pid,st);setStatus(pid,'error');}
+        else{st.lastSync=Date.now();st.error='';put(pid,st);setStatus(pid,'ok');}
         if(pid===profile.id&&current==='plan')renderPlan();
       }catch(e){
         const st=get(pid);
@@ -1454,22 +1472,40 @@ const Sync=(function(){
   function setStatus(pid,s){live[pid]=s;if(pid===profile.id)render();}
   function statusText(pid){
     if(!enabled)return ['Not configured',''];
-    const st=get(pid);if(!st.session)return [st.error||'Not signed in',st.error?'err':''];
-    const n=st.queue.length,s=live[pid];
+    const st=get(pid);if(!st.session)return [st.error||'Not signed in – sessions stay on this phone',st.error?'err':'off'];
+    const n=workQueue(st).length,s=live[pid];
     if(s==='syncing')return ['Syncing…',''];
-    if(s==='offline'||!navigator.onLine)return [`Offline${n?` · ${n} change${n>1?'s':''} waiting`:''}`,'off'];
-    if(s==='error')return ['Sync error: '+st.error,'err'];
-    if(st.lastSync)return [`Synced ${new Date(st.lastSync).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}${n?` · ${n} waiting`:''}`,'ok'];
+    if(s==='offline'||!navigator.onLine)return [`Offline${n?` · ${n} not synced`:''}`,'off'];
+    if(s==='error')return ['Not synced: '+(st.error||'upload failed'),'err'];
+    if(n)return [n+' not synced','err'];
+    if(st.lastSync)return [`Synced ${new Date(st.lastSync).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`,'ok'];
     return ['Signed in – not synced yet',''];
   }
   function render(){
     const pid=profile.id,st=get(pid),[txt,cls]=statusText(pid);
     const el=$('#syncStatus');el.textContent=txt;el.className='sync-status '+cls;
-    const pill=$('#syncPill');pill.classList.toggle('hidden',!enabled||!st.session);
-    pill.textContent=txt.replace(/^Synced /,'☁ ').replace(/ · .*/,'').replace(/^Sync error.*/,'☁ error').replace(/^Offline.*/,'☁ offline').replace('Syncing…','☁ …').replace(/^Signed in.*/,'☁');
-    pill.className='sync-pill '+cls+(!enabled||!st.session?' hidden':'');
+    const pill=$('#syncPill');
+    pill.classList.toggle('hidden',!enabled);
+    if(!st.session){pill.textContent=st.error?'☁ sign in':'☁ not backed up';pill.setAttribute('aria-label','Cloud sync – not signed in, tap to sign in');}
+    else{pill.textContent=txt.replace(/^Synced /,'☁ ').replace(/^Not synced:.*/,'☁ not synced').replace(/^Offline.*/,'☁ offline').replace('Syncing…','☁ …').replace(/^Signed in.*/,'☁').replace(/^(\d+) not synced/,'☁ $1 not synced');
+      pill.setAttribute('aria-label','Cloud sync status – tap to sync now');}
+    pill.className='sync-pill '+cls+(!enabled?' hidden':'');
     $('#syncNoCfg').classList.toggle('hidden',enabled);$('#syncOut').classList.toggle('hidden',!enabled||!!st.session);$('#syncIn').classList.toggle('hidden',!enabled||!st.session);
     if(st.session)$('#syncWho').textContent=st.session.user.email||st.session.user.id;
+    const ban=$('#syncBanner'),bt=$('#syncBannerText'),bb=$('#syncBannerBtn');
+    if(!ban)return;
+    if(!enabled){ban.className='banner hidden';return;}
+    if(!st.session){
+      const n=readDB(pid).sessions.length;
+      if(!n&&!st.error){ban.className='banner hidden';}
+      else{
+        let msg=st.error?st.error+'. ':'';
+        msg+=n?`${n} session${n===1?' is':'s are'} on this phone and not backed up.`:'Not signed in – new sessions stay on this phone until you sign in.';
+        msg+=standaloneCopy()?' The Home Screen icon needs its own sign-in (Safari sign-in does not carry over).':' Sign in here to back them up. Safari and the Home Screen icon each need their own sign-in.';
+        bt.textContent=msg;bb.textContent='Sign in';ban.className='banner warn';}
+    }else if(cls==='err'||workQueue(st).length){
+      bt.textContent=txt+(txt.indexOf(st.error||'')>=0||!st.error?'':': '+st.error);bb.textContent='Retry';ban.className='banner warn';
+    }else ban.className='banner hidden';
   }
   // ---- auth UI (email + password; email delivery is not used) ----
   const CONFIRM_MSG='Account created, but email confirmation is on. Ask Tom to turn off Confirm email in Supabase, or ask the assistant to activate your account.';
@@ -1497,7 +1533,9 @@ const Sync=(function(){
   async function afterSignIn(pid,j){
     storeSession(pid,j);const s2=get(pid);s2.pendingEmail='';put(pid,s2);
     $('#syncPass').value='';setPwVisible(false);msg('');render();toast('Signed in – syncing…');await sync(pid);
-    const s3=get(pid);if(s3.lastSync)toast('Synced ✓ – your data is backed up');
+    const s3=get(pid);
+    if(workQueue(s3).length||s3.error)toast('Signed in, but not fully synced'+(s3.error?': '+s3.error:''));
+    else if(s3.lastSync)toast('Synced ✓ – your data is backed up');
   }
   let busy=false;
   function setBusy(b){busy=b;$('#syncSignIn').disabled=b;$('#syncCreate').disabled=b;}
@@ -1543,25 +1581,28 @@ const Sync=(function(){
   $('#syncCreate').addEventListener('click',createAccount);
   $('#syncPassToggle').addEventListener('click',()=>setPwVisible($('#syncPass').type==='password'));
   ['#syncEmail','#syncPass'].forEach(id=>$(id).addEventListener('input',()=>{if($('#syncMsg').classList.contains('err'))msg('');}));
+  function goSignIn(){show('data');const e=$('#syncEmail');if(e)e.focus();}
   $('#syncNow').addEventListener('click',()=>sync(profile.id));
-  $('#syncPill').addEventListener('click',()=>sync(profile.id));
+  $('#syncPill').addEventListener('click',()=>{if(!get(profile.id).session)goSignIn();else sync(profile.id);});
+  $('#syncBannerBtn').addEventListener('click',()=>{if(!get(profile.id).session)goSignIn();else sync(profile.id);});
   $('#syncSignOut').addEventListener('click',signOut);
-  window.addEventListener('online',()=>{PROFILES.forEach(p=>{if(get(p.id).session)sync(p.id);});});
+  function syncAll(ms){PROFILES.forEach(p=>{if(get(p.id).session)schedule(p.id,ms==null?0:ms);});}
+  window.addEventListener('online',()=>syncAll());
   window.addEventListener('offline',()=>{PROFILES.forEach(p=>live[p.id]='offline');render();});
   let lastPull=0;
-  function wake(){if(document.visibilityState!=='visible')return;keepAlive();if(Date.now()-lastPull>15000){lastPull=Date.now();sync(profile.id);}}
+  function wake(){if(document.visibilityState!=='visible')return;keepAlive();if(Date.now()-lastPull>15000){lastPull=Date.now();syncAll();}}
   document.addEventListener('visibilitychange',wake);
   window.addEventListener('focus',wake);
   window.addEventListener('pageshow',ev=>{if(ev.persisted)wake();});
-  setInterval(()=>{if(document.visibilityState==='visible')keepAlive();},60000);
+  setInterval(()=>{if(document.visibilityState!=='visible')return;keepAlive();PROFILES.forEach(p=>{const st=get(p.id);if(st.session&&workQueue(st).length)schedule(p.id,0);});},60000);
   function start(){
     PROFILES.forEach(p=>initKnown(p.id));render();
     try{if(enabled&&navigator.storage&&navigator.storage.persist)navigator.storage.persisted().then(p=>p||navigator.storage.persist()).catch(()=>{});}catch(e){}
     restoreSessions().catch(()=>{}).then(()=>{
       PROFILES.forEach(p=>{const st=get(p.id);if(st.session&&!localStorage.getItem(AUTH_KEY(p.id)))backupSession(p.id,st.session);});   // back up v11 sessions
-      render();return handleRedirect();}).then(()=>{lastPull=Date.now();sync(profile.id);});
+      render();return handleRedirect();}).then(()=>{lastPull=Date.now();syncAll();});
   }
-  return {enabled,track,sync,render,start,signedIn:pid=>!!get(pid).session,state:get,keepAlive,ensureToken,invalidRefresh,authKey:AUTH_KEY,idbGet:k=>idb.get(k)};
+  return {enabled,track,sync,syncAll,render,start,signedIn:pid=>!!get(pid).session,state:get,workQueue,keepAlive,ensureToken,invalidRefresh,authKey:AUTH_KEY,idbGet:k=>idb.get(k)};
 })();
 window.__plSync=Sync;
 function refreshViews(){
